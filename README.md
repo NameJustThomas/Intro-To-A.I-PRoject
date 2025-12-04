@@ -4,6 +4,8 @@ AI Attendance System + Environment Recognition for Cafe Takeaway
 
 ## Quick Start
 
+> 📖 **For detailed step-by-step instructions, see [HOW_TO_RUN.md](HOW_TO_RUN.md)**
+
 1. **Install Docker & Docker Compose**
 2. **Start services:**
    ```bash
@@ -56,6 +58,7 @@ pytest
 
 ## Important Files
 
+- **`HOW_TO_RUN.md`** - 📖 **STEP-BY-STEP GUIDE** to run the project (start here!)
 - **`PROJECT_NOTES.md`** - ⚠️ **ALWAYS READ THIS FIRST** when continuing work
 - **`ai_attendance_for_cafe_project_scaffold.md`** - Original requirements
 - **`CONTRIBUTING.md`** - Development guidelines
