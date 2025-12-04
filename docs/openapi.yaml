@@ -1,0 +1,165 @@
+openapi: 3.0.3
+info:
+  title: AI Attendance API
+  version: 1.0.0
+  description: AI Attendance System + Environment Recognition for Cafe Takeaway
+servers:
+  - url: http://localhost:8000/api
+    description: Local development server
+
+paths:
+  /v1/employee/register-face:
+    post:
+      summary: Register employee face
+      tags:
+        - employees
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - employee_id
+                - images
+              properties:
+                employee_id:
+                  type: string
+                  description: Employee ID or code
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Multiple face images for registration
+      responses:
+        '200':
+          description: Face registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  employee_id:
+                    type: string
+                  embeddings_count:
+                    type: integer
+        '400':
+          description: Bad request
+        '404':
+          description: Employee not found
+        '500':
+          description: Internal server error
+
+  /v1/attendance/check-in:
+    post:
+      summary: Check in image/frame
+      tags:
+        - attendance
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - camera_id
+                - image
+              properties:
+                camera_id:
+                  type: string
+                  description: Camera identifier
+                image:
+                  type: string
+                  format: binary
+                  description: Image frame for face recognition
+      responses:
+        '200':
+          description: Check-in result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  employee_id:
+                    type: string
+                  employee_name:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+                  confidence:
+                    type: number
+                    format: float
+                  camera_id:
+                    type: string
+        '400':
+          description: Bad request
+        '404':
+          description: Employee not recognized
+        '500':
+          description: Internal server error
+
+  /v1/dashboard/attendance-month:
+    get:
+      summary: Get monthly attendance summary
+      tags:
+        - dashboard
+      parameters:
+        - in: query
+          name: store_id
+          schema:
+            type: string
+          description: Store identifier
+        - in: query
+          name: month
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}$'
+            example: '2025-11'
+          description: Month in YYYY-MM format
+          required: true
+      responses:
+        '200':
+          description: Monthly attendance report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  month:
+                    type: string
+                  store_id:
+                    type: string
+                  total_employees:
+                    type: integer
+                  total_check_ins:
+                    type: integer
+                  attendance_summary:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        employee_id:
+                          type: string
+                        employee_name:
+                          type: string
+                        total_days:
+                          type: integer
+                        present_days:
+                          type: integer
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+
