@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import datetime
 from app.db.base import get_db
 from app.models.orm_models import Camera
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 
 
 class CameraResponse(BaseModel):
@@ -12,7 +13,11 @@ class CameraResponse(BaseModel):
     name: str
     location: str
     rtsp_url: Optional[str]
-    created_at: str
+    created_at: datetime
+
+    @field_serializer('created_at')
+    def serialize_created_at(self, value: datetime) -> str:
+        return value.isoformat() if value else None
 
     class Config:
         from_attributes = True

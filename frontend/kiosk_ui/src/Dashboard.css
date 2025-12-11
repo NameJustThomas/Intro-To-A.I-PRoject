@@ -1,0 +1,1138 @@
+.dashboard-app {
+  text-align: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.dashboard-header {
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.welcome-text {
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+.logout-btn {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: #c82333;
+}
+
+/* Login Prompt Styles */
+.login-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-prompt-content {
+  background: white;
+  padding: 50px 40px;
+  border-radius: 15px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  text-align: center;
+}
+
+.login-prompt-content h1 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 2rem;
+}
+
+.login-prompt-content p {
+  color: #666;
+  margin-bottom: 15px;
+  line-height: 1.6;
+}
+
+.login-instructions {
+  background: #f0f7ff;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  margin: 25px 0;
+  text-align: left;
+}
+
+.login-actions {
+  margin-top: 30px;
+}
+
+.login-actions .btn {
+  display: inline-block;
+  padding: 12px 30px;
+  background-color: #667eea;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.login-actions .btn:hover {
+  background-color: #5568d3;
+}
+
+.dashboard-main {
+  padding: 20px;
+}
+
+.filters {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filters input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.filters button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  height: fit-content;
+  margin-top: 20px;
+}
+
+.filters button:hover {
+  background-color: #0056b3;
+}
+
+.loading {
+  padding: 20px;
+  font-size: 18px;
+}
+
+.error {
+  padding: 20px;
+  background-color: #f8d7da;
+  color: #721c24;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.attendance-summary {
+  margin-top: 20px;
+}
+
+.summary-stats {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+.summary-stats p {
+  margin: 0;
+  font-size: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+table th,
+table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+table tr:hover {
+  background-color: #f5f5f5;
+}
+
+table tr.has-late-checkins {
+  background-color: #fff5f5;
+}
+
+table tr.has-late-checkins:hover {
+  background-color: #ffe5e5;
+}
+
+table td.late-days {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+/* Late check-in highlighting */
+.late-checkin {
+  background-color: #fff5f5 !important;
+  border-left: 4px solid #dc3545 !important;
+}
+
+.late-badge {
+  background-color: #dc3545;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.employee-role {
+  color: #666;
+  font-size: 14px;
+  font-weight: normal;
+  margin-left: 5px;
+}
+
+/* Management Section */
+.management-section {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.management-section h2 {
+  margin-bottom: 30px;
+  color: #333;
+  text-align: center;
+}
+
+.manage-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.manage-tabs button {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.manage-tabs button.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+  font-weight: 600;
+}
+
+.manage-section {
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.manage-section h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 10px;
+}
+
+.manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.manage-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.manage-item-info {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.manage-item-info div {
+  font-size: 14px;
+}
+
+.btn-edit {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: transform 0.2s;
+}
+
+.btn-edit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.edit-form {
+  width: 100%;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #667eea;
+}
+
+.edit-form .form-group {
+  margin-bottom: 15px;
+}
+
+.edit-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+.edit-form input,
+.edit-form select {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.edit-form input:focus,
+.edit-form select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-save {
+  padding: 10px 20px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #218838;
+}
+
+.btn-save:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  padding: 10px 20px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.btn-cancel:hover {
+  background: #5a6268;
+}
+
+/* Face Edit Form */
+.face-edit-form {
+  margin-top: 15px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #667eea;
+}
+
+.face-edit-form h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.manage-item-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-edit-face {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: transform 0.2s;
+}
+
+.btn-edit-face:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(245, 87, 108, 0.3);
+}
+
+.btn-delete {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: transform 0.2s;
+}
+
+.btn-delete:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
+}
+
+.btn-delete:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.info-text {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #28a745;
+  font-weight: 600;
+}
+
+.success-message {
+  background: #d4edda;
+  color: #155724;
+  padding: 10px;
+  border-radius: 6px;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+/* Camera Mode Toggle */
+.camera-mode-toggle {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.btn-toggle {
+  padding: 8px 16px;
+  background: white;
+  border: 2px solid #667eea;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #667eea;
+  transition: all 0.3s;
+}
+
+.btn-toggle:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+}
+
+.btn-toggle.active {
+  background: #667eea;
+  color: white;
+}
+
+.btn-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Camera Preview Section */
+.camera-preview-section {
+  margin: 20px 0;
+}
+
+.camera-preview {
+  width: 100%;
+  max-width: 500px;
+  height: 375px;
+  background: #000;
+  border-radius: 10px;
+  margin: 0 auto 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.camera-placeholder {
+  color: white;
+  text-align: center;
+  padding: 20px;
+}
+
+.btn-capture {
+  display: block;
+  margin: 0 auto;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: transform 0.2s;
+}
+
+.btn-capture:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-capture:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Selected Images List */
+.selected-images-list {
+  margin: 15px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.selected-images-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0 0;
+}
+
+.selected-images-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.btn-remove-image {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.btn-remove-image:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.btn-remove-image:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Schedule Management Styles */
+.schedule-filters {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.schedule-filters .form-group {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.schedule-filters label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+.schedule-filters select,
+.schedule-filters input[type="date"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.btn-load-schedule {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-load-schedule:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-load-schedule:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.schedule-table-container {
+  margin-top: 20px;
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.schedule-table-container h4 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.schedule-table th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.schedule-table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: top;
+}
+
+.schedule-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.employee-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.employee-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #1976d2;
+}
+
+.no-employees {
+  color: #999;
+  font-style: italic;
+}
+
+.btn-remove-small {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-left: 5px;
+}
+
+.btn-remove-small:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.btn-remove-small:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-employee-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.add-employee-cell input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.add-employee-cell input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.btn-add-small {
+  padding: 6px 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-add-small:hover:not(:disabled) {
+  background: #218838;
+}
+
+.btn-add-small:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Navigation Tabs */
+.nav-tabs {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.nav-tabs button {
+  padding: 10px 20px;
+  background-color: #444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.nav-tabs button:hover {
+  background-color: #555;
+}
+
+.nav-tabs button.active {
+  background-color: #007bff;
+}
+
+/* Face Registration Styles */
+.face-registration {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.instruction-text {
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 14px;
+}
+
+.registration-form {
+  background: #f9f9f9;
+  padding: 30px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 25px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input[type="text"] {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.form-group input[type="file"] {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 5px;
+  color: #666;
+  font-size: 12px;
+}
+
+.image-preview-list {
+  margin-top: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.image-preview-list ul {
+  margin: 10px 0 0 0;
+  padding-left: 20px;
+}
+
+.image-preview-list li {
+  margin: 5px 0;
+  color: #333;
+}
+
+.register-button {
+  padding: 12px 30px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.register-button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.register-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8d7da;
+  color: #721c24;
+  border-radius: 4px;
+  border: 1px solid #f5c6cb;
+}
+
+.success-message {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #d4edda;
+  color: #155724;
+  border-radius: 4px;
+  border: 1px solid #c3e6cb;
+}
+
+.success-message p {
+  margin: 8px 0;
+}
+
+.registration-tips {
+  background: #e7f3ff;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.registration-tips h3 {
+  margin-top: 0;
+  color: #007bff;
+}
+
+.registration-tips ul {
+  margin: 10px 0 0 0;
+  padding-left: 20px;
+}
+
+.registration-tips li {
+  margin: 8px 0;
+  color: #333;
+}
+
+/* Check-in History Styles */
+.checkin-history {
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.checkin-history h2 {
+  margin-bottom: 30px;
+  color: #333;
+  text-align: center;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.history-item {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s;
+}
+
+.history-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.history-employee {
+  font-size: 18px;
+  color: #333;
+}
+
+.history-time {
+  color: #666;
+  font-size: 14px;
+}
+
+.history-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 10px;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #555;
+  min-width: 140px;
+}
+
+.location-valid {
+  color: #28a745;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.location-invalid {
+  color: #dc3545;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.status-ontime {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.status-late {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.status-unknown {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* Improved Dashboard Styles */
+.dashboard-main {
+  background: #f5f5f5;
+  min-height: calc(100vh - 200px);
+  padding: 30px 20px;
+}
+
+.attendance-summary {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.attendance-summary h2 {
+  margin-top: 0;
+  color: #333;
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.summary-stats {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+}
+
+.filters {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.filters input {
+  border: 2px solid #e0e0e0;
+  transition: border-color 0.3s;
+}
+
+.filters input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.filters button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: transform 0.2s;
+}
+
+.filters button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+table {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+table th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+}
+
+table tr:hover {
+  background-color: #f8f9fa;
+}
+

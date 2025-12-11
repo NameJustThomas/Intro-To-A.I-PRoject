@@ -41,8 +41,11 @@ def get_monthly_attendance(
             employee_stats[emp_id] = {
                 'employee_id': emp_id,
                 'employee_name': log.employee.name,
+                'employee_role': log.employee.role,
                 'present_days': 0,
-                'dates': set()
+                'late_days': 0,
+                'dates': set(),
+                'late_dates': set()
             }
         
         # Count unique dates
@@ -50,6 +53,12 @@ def get_monthly_attendance(
         if log_date not in employee_stats[emp_id]['dates']:
             employee_stats[emp_id]['dates'].add(log_date)
             employee_stats[emp_id]['present_days'] += 1
+            
+            # Count late check-ins
+            if log.is_on_time == 0:
+                if log_date not in employee_stats[emp_id]['late_dates']:
+                    employee_stats[emp_id]['late_dates'].add(log_date)
+                    employee_stats[emp_id]['late_days'] += 1
     
     # Get all employees for total count
     total_employees = db.query(Employee).count()
@@ -59,8 +68,10 @@ def get_monthly_attendance(
         AttendanceSummary(
             employee_id=stats['employee_id'],
             employee_name=stats['employee_name'],
+            employee_role=stats['employee_role'],
             total_days=30,  # Stub: should calculate from schedules
-            present_days=stats['present_days']
+            present_days=stats['present_days'],
+            late_days=stats['late_days']
         )
         for stats in employee_stats.values()
     ]

@@ -12,6 +12,98 @@
   margin-bottom: 20px;
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.welcome-text {
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+.logout-btn {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: #c82333;
+}
+
+/* Login Prompt Styles */
+.login-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-prompt-content {
+  background: white;
+  padding: 50px 40px;
+  border-radius: 15px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  text-align: center;
+}
+
+.login-prompt-content h1 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 2rem;
+}
+
+.login-prompt-content p {
+  color: #666;
+  margin-bottom: 15px;
+  line-height: 1.6;
+}
+
+.login-instructions {
+  background: #f0f7ff;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  margin: 25px 0;
+  text-align: left;
+}
+
+.login-actions {
+  margin-top: 30px;
+}
+
+.login-actions .btn {
+  display: inline-block;
+  padding: 12px 30px;
+  background-color: #667eea;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.login-actions .btn:hover {
+  background-color: #5568d3;
+}
+
 .App-main {
   padding: 20px;
 }
@@ -100,5 +192,171 @@ table th {
 
 table tr:hover {
   background-color: #f5f5f5;
+}
+
+/* Navigation Tabs */
+.nav-tabs {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.nav-tabs button {
+  padding: 10px 20px;
+  background-color: #444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.nav-tabs button:hover {
+  background-color: #555;
+}
+
+.nav-tabs button.active {
+  background-color: #007bff;
+}
+
+/* Face Registration Styles */
+.face-registration {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.instruction-text {
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 14px;
+}
+
+.registration-form {
+  background: #f9f9f9;
+  padding: 30px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 25px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input[type="text"] {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.form-group input[type="file"] {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 5px;
+  color: #666;
+  font-size: 12px;
+}
+
+.image-preview-list {
+  margin-top: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.image-preview-list ul {
+  margin: 10px 0 0 0;
+  padding-left: 20px;
+}
+
+.image-preview-list li {
+  margin: 5px 0;
+  color: #333;
+}
+
+.register-button {
+  padding: 12px 30px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.register-button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.register-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8d7da;
+  color: #721c24;
+  border-radius: 4px;
+  border: 1px solid #f5c6cb;
+}
+
+.success-message {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #d4edda;
+  color: #155724;
+  border-radius: 4px;
+  border: 1px solid #c3e6cb;
+}
+
+.success-message p {
+  margin: 8px 0;
+}
+
+.registration-tips {
+  background: #e7f3ff;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.registration-tips h3 {
+  margin-top: 0;
+  color: #007bff;
+}
+
+.registration-tips ul {
+  margin: 10px 0 0 0;
+  padding-left: 20px;
+}
+
+.registration-tips li {
+  margin: 8px 0;
+  color: #333;
 }
 

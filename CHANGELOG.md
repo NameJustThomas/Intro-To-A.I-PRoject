@@ -54,3 +54,35 @@ All notable changes to the AI Attendance System project will be documented in th
 - All secrets use environment variables
 - Code follows black, isort, and flake8 standards
 
+## [1.1.0] - 2025-12-11
+
+### Added
+- Complete project setup and verification
+- Unified setup documentation (`SETUP.md`)
+- Quick start guide in README
+- **Kiosk UI component** (`frontend/kiosk_ui/`)
+  - Camera capture for face recognition check-in
+  - Photo upload functionality
+  - Real-time check-in status feedback
+  - Touch-friendly interface for kiosk devices
+  - Integration with attendance check-in API
+
+### Changed
+- Consolidated documentation files (reduced from 12 to 9 .md files)
+- Moved `IMPLEMENTATION_SUMMARY.md` to `docs/` folder
+- Updated README with streamlined quick start instructions
+
+### Removed
+- Redundant documentation files:
+  - `QUICK_START.md` (merged into README)
+  - `SETUP_GUIDE.md` (merged into SETUP.md)
+  - `HOW_TO_RUN.md` (merged into SETUP.md)
+  - `DOCUMENTATION_GUIDE.md` (no longer needed)
+
+### Verified
+- All Docker services running correctly
+- Database initialized with migrations
+- Sample data imported successfully
+- Test store and camera created
+- Backend API accessible and functional
+

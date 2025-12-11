@@ -1,33 +1,32 @@
 # AI Attendance System
 
-AI Attendance System + Environment Recognition for Cafe Takeaway
+AI-powered employee attendance system for takeaway coffee shops using face recognition.
 
-## Quick Start
+## 🚀 Quick Start
 
-> 📖 **For detailed step-by-step instructions, see [HOW_TO_RUN.md](HOW_TO_RUN.md)**
+### Subsequent Runs (Already Set Up)
 
-1. **Install Docker & Docker Compose**
-2. **Start services:**
-   ```bash
-   cd infra
-   docker compose up --build
-   ```
-3. **Initialize database** (in new terminal):
-   ```bash
-   python scripts/init_db.py
-   python scripts/import_sample_data.py
-   ```
-4. **Access:**
-   - Backend API: http://localhost:8000
-   - API Docs: http://localhost:8000/docs
-   - OpenAPI Spec: http://localhost:8000/openapi.json
+If you've already set up the project:
+
+```powershell
+cd infra
+docker compose up -d
+```
+
+Wait 10-15 seconds, then access: **http://localhost:8000/docs**
+
+### First Time Setup
+
+See **[SETUP.md](SETUP.md)** for complete first-time setup instructions.
 
 ## Project Structure
 
 ```
 ai-attendance/
 ├── backend/          # FastAPI backend application
-├── frontend/         # React dashboard and kiosk UI
+├── frontend/         # React applications
+│   ├── dashboard/    # Attendance reports dashboard
+│   └── kiosk_ui/     # Employee check-in kiosk interface
 ├── mobile/           # Flutter mobile app
 ├── infra/            # Docker compose and nginx config
 ├── docs/             # OpenAPI spec and architecture docs
@@ -44,8 +43,17 @@ uvicorn app.main:app --reload
 ```
 
 ### Frontend
+
+**Dashboard (Reports):**
 ```bash
 cd frontend/dashboard
+npm install
+npm start
+```
+
+**Kiosk UI (Check-in):**
+```bash
+cd frontend/kiosk_ui
 npm install
 npm start
 ```
@@ -56,13 +64,13 @@ cd backend
 pytest
 ```
 
-## Important Files
+## Documentation
 
-- **`HOW_TO_RUN.md`** - 📖 **STEP-BY-STEP GUIDE** to run the project (start here!)
-- **`PROJECT_NOTES.md`** - ⚠️ **ALWAYS READ THIS FIRST** when continuing work
-- **`ai_attendance_for_cafe_project_scaffold.md`** - Original requirements
-- **`CONTRIBUTING.md`** - Development guidelines
-- **`DOCUMENTATION_GUIDE.md`** - Guide to all documentation files
+- **[SETUP.md](SETUP.md)** - Complete setup and usage guide (start here for first-time setup)
+- **[PROJECT_NOTES.md](PROJECT_NOTES.md)** - Implementation details and progress tracker
+- **[docs/IMPLEMENTATION_SUMMARY.md](docs/IMPLEMENTATION_SUMMARY.md)** - Technical details about AI implementation
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guidelines
+- **[ai_attendance_for_cafe_project_scaffold.md](ai_attendance_for_cafe_project_scaffold.md)** - Original project requirements
 
 ## Development
 

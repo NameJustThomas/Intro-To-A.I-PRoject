@@ -10,6 +10,8 @@ class Store(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(Text)
     address = Column(Text)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
     cameras = relationship("Camera", back_populates="store")
@@ -60,11 +62,13 @@ class Schedule(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     employee_id = Column(Integer, ForeignKey("employees.id"))
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=True)
     date = Column(DATE)
     shift_start = Column(TIMESTAMP)
     shift_end = Column(TIMESTAMP)
 
     employee = relationship("Employee", back_populates="schedules")
+    store = relationship("Store")
 
 
 class AttendanceLog(Base):
@@ -76,6 +80,11 @@ class AttendanceLog(Base):
     camera_id = Column(Integer, ForeignKey("cameras.id"))
     confidence = Column(Float)
     snapshot_url = Column(Text)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    location_validated = Column(Integer, default=0)  # 0 = not validated, 1 = valid, 2 = invalid
+    distance_from_store = Column(Float, nullable=True)
+    is_on_time = Column(Integer, default=1)  # 1 = on time, 0 = late
 
     employee = relationship("Employee", back_populates="attendance_logs")
     camera = relationship("Camera", back_populates="attendance_logs")
