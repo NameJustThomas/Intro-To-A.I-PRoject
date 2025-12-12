@@ -861,10 +861,6 @@ function Dashboard() {
                         <span>{record.store_name || 'N/A'}</span>
                       </div>
                       <div className="detail-row">
-                        <span className="detail-label">Camera:</span>
-                        <span>{record.camera_name || `Camera ${record.camera_id}`}</span>
-                      </div>
-                      <div className="detail-row">
                         <span className="detail-label">Confidence:</span>
                         <span>{(record.confidence * 100).toFixed(1)}%</span>
                       </div>

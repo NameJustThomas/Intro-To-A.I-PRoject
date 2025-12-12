@@ -262,6 +262,16 @@ ai-attendance/
 - Backend API accessible at http://localhost:8000
 - Documentation cleaned and organized
 
+## Anti-Spoofing Feature Completed (2025-12-XX)
+- [x] **Anti-Spoofing Implementation**
+  - Implemented real anti-spoofing detection using OpenCV
+  - Multiple detection methods: texture, color, edge, quality, lighting analysis
+  - Integrated into attendance check-in endpoint
+  - Configurable threshold via environment variable (`ANTI_SPOOF_THRESHOLD`)
+  - Frontend displays liveness score and status
+  - Blocks check-in if spoof detected (HTTP 403 error)
+  - Returns detailed scores in API response for debugging
+
 ## Notes for Future Sessions
 - **ALWAYS READ THIS FILE FIRST** before continuing work
 - Review scaffold document (`ai_attendance_for_cafe_project_scaffold.md`) for requirements

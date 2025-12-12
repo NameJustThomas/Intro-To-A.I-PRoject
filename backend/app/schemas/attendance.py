@@ -13,6 +13,8 @@ class CheckInResponse(BaseModel):
     longitude: Optional[float] = None
     location_validated: Optional[bool] = None
     distance_from_store: Optional[float] = None
+    anti_spoof_score: Optional[float] = None  # Liveness detection score (0.0-1.0)
+    is_live: Optional[bool] = None  # Whether face passed anti-spoofing check
 
 
 class CheckInHistoryItem(BaseModel):

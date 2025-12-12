@@ -22,6 +22,17 @@ class Settings(BaseSettings):
     FACE_RECOGNITION_MODEL: Optional[str] = None
     PEOPLE_COUNT_MODEL: Optional[str] = None
     
+    # Anti-Spoofing
+    ANTI_SPOOF_THRESHOLD: float = 0.48  # Liveness detection threshold (0.0-1.0, higher = stricter)
+    # Balanced threshold (0.48) - blocks most photos while allowing live video
+    # Adjust based on your environment: 
+    #   0.40-0.45 = lenient (may allow some photos)
+    #   0.48-0.52 = balanced (recommended)
+    #   0.55-0.6 = strict (may reject some live video)
+    #   0.6+ = very strict
+    ANTI_SPOOF_ENABLED: bool = True  # Set to False to disable anti-spoofing check
+    MULTI_FACE_DETECTION_ENABLED: bool = True  # Set to False to disable multiple face/person detection
+    
     # File Storage
     UPLOAD_DIR: str = "./uploads"
     SNAPSHOT_DIR: str = "./snapshots"

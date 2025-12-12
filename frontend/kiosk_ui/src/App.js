@@ -28,7 +28,7 @@ function CheckIn() {
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const fileInputRef = useRef(null);
+  // const fileInputRef = useRef(null); // Photo upload disabled for security
   const regFileInputRef = useRef(null);
 
   // Fetch available cameras on mount
@@ -156,32 +156,6 @@ function CheckIn() {
     }
   };
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setStatus({ type: 'error', message: 'Please select an image file' });
-      return;
-    }
-
-    setLoading(true);
-    setStatus({ type: 'loading', message: 'Processing image and checking in...' });
-    setCheckinResult(null);
-
-    try {
-      await performCheckIn(file);
-    } catch (error) {
-      // Error handling is done in performCheckIn
-      // This catch is just for file validation errors
-      if (error.message && !error.message.includes('Check-in failed')) {
-        const errorMsg = typeof error.message === 'string' ? error.message : String(error.message || 'File upload failed');
-        setStatus({ type: 'error', message: errorMsg });
-        setLoading(false);
-      }
-    }
-  };
-
   const getCurrentLocation = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -252,6 +226,8 @@ function CheckIn() {
         longitude: result.longitude,
         locationValidated: result.location_validated,
         distanceFromStore: result.distance_from_store,
+        antiSpoofScore: result.anti_spoof_score,
+        isLive: result.is_live,
       });
 
       setStatus({
@@ -644,17 +620,9 @@ function CheckIn() {
       <div className="kiosk-container">
         <h1 className="kiosk-title">AI Attendance Kiosk</h1>
         <p className="kiosk-subtitle">Face Recognition Check-in</p>
-
-        <div className="camera-id-input-wrapper">
-          <label className="camera-id-label">Camera ID:</label>
-          <input
-            type="text"
-            className="camera-id-input"
-            value={cameraId}
-            onChange={(e) => setCameraId(e.target.value)}
-            placeholder="Enter camera ID (e.g., 1)"
-          />
-        </div>
+        <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '5px' }}>
+          ⚠️ Live camera required - Photo upload disabled for security
+        </p>
 
         <div className="camera-section">
           <div className="camera-preview">
@@ -698,18 +666,7 @@ function CheckIn() {
               </>
             )}
 
-            <div className="file-input-wrapper">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                disabled={loading}
-              />
-              <label className="file-input-label">
-                {loading ? 'Processing...' : 'Upload Photo to Check In'}
-              </label>
-            </div>
+            {/* Photo upload disabled - only live camera check-in allowed for security */}
           </div>
         </div>
 
@@ -743,7 +700,16 @@ function CheckIn() {
               <p><strong>Name:</strong> {checkinResult.employeeName}</p>
               <p><strong>Time:</strong> {new Date(checkinResult.timestamp).toLocaleString('vi-VN')}</p>
               <p><strong>Confidence:</strong> {(checkinResult.confidence * 100).toFixed(1)}%</p>
-              <p><strong>Camera ID:</strong> {checkinResult.cameraId}</p>
+              {checkinResult.antiSpoofScore !== null && checkinResult.antiSpoofScore !== undefined && (
+                <p>
+                  <strong>Liveness Score:</strong> {(checkinResult.antiSpoofScore * 100).toFixed(1)}%
+                  {checkinResult.isLive ? (
+                    <span style={{ color: '#28a745', marginLeft: '10px', fontWeight: '600' }}>✓ Live Face Detected</span>
+                  ) : (
+                    <span style={{ color: '#dc3545', marginLeft: '10px', fontWeight: '600' }}>⚠ Spoof Detected</span>
+                  )}
+                </p>
+              )}
               {checkinResult.latitude && checkinResult.longitude && (
                 <>
                   <p><strong>Location:</strong> {checkinResult.latitude.toFixed(6)}, {checkinResult.longitude.toFixed(6)}</p>
