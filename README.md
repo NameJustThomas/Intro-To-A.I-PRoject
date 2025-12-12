@@ -4,20 +4,43 @@ AI-powered employee attendance system for takeaway coffee shops using face recog
 
 ## 🚀 Quick Start
 
-### Subsequent Runs (Already Set Up)
+### Next Time You Run the Project (Already Set Up)
 
-If you've already set up the project:
+If you've already completed the first-time setup:
 
+**1. Start Docker Services (Backend, Database, Redis):**
 ```powershell
 cd infra
 docker compose up -d
 ```
 
-Wait 10-15 seconds, then access: **http://localhost:8000/docs**
+Wait 10-15 seconds for services to start.
+
+**2. Start Frontend (Kiosk UI + Dashboard):**
+```powershell
+cd frontend/kiosk_ui
+npm start
+```
+
+The frontend will open at **http://localhost:3001**
+
+**3. Access the Application:**
+- **Check-in Page (Kiosk UI):** http://localhost:3001
+- **Dashboard:** http://localhost:3001/dashboard (after check-in)
+- **Backend API Docs:** http://localhost:8000/docs
+
+**4. Stop Services (when done):**
+```powershell
+# Stop frontend: Press Ctrl+C in the terminal running npm start
+
+# Stop Docker services:
+cd infra
+docker compose down
+```
 
 ### First Time Setup
 
-See **[SETUP.md](SETUP.md)** for complete first-time setup instructions.
+See **[SETUP.md](SETUP.md)** for complete first-time setup instructions (database initialization, sample data, etc.).
 
 ## Project Structure
 
