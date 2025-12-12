@@ -1,317 +1,283 @@
+# -*- coding: utf-8 -*-
 """
-Anti-spoofing module for face liveness detection.
-Uses multiple computer vision techniques to detect if a face is live or a photo/spoof.
+Anti-spoofing module using MiniFASNet models from Silent-Face-Anti-Spoofing.
+Properly integrated with multiple model fusion approach.
+Function: is_live(face_img, bbox) returning True/False
 """
 import numpy as np
 import cv2
-from typing import Dict, Tuple
+import torch
+import torch.nn.functional as F
+from pathlib import Path
+import warnings
+import os
+from collections import OrderedDict
+
+# Import model architecture
+try:
+    from app.ai.minifasnet import MiniFASNetV1, MiniFASNetV2, MiniFASNetV1SE, MiniFASNetV2SE
+except ImportError:
+    from .minifasnet import MiniFASNetV1, MiniFASNetV2, MiniFASNetV1SE, MiniFASNetV2SE
+
+# Import utilities
+try:
+    from app.ai.anti_spoof_utils import get_kernel, parse_model_name
+    from app.ai.generate_patches import CropImage
+    from app.ai.transform import Compose, ToTensor
+except ImportError:
+    from .anti_spoof_utils import get_kernel, parse_model_name
+    from .generate_patches import CropImage
+    from .transform import Compose, ToTensor
+
+warnings.filterwarnings("ignore")
+
+# Model mapping
+MODEL_MAPPING = {
+    'MiniFASNetV1': MiniFASNetV1,
+    'MiniFASNetV2': MiniFASNetV2,
+    'MiniFASNetV1SE': MiniFASNetV1SE,
+    'MiniFASNetV2SE': MiniFASNetV2SE
+}
+
+# Global variables
+_models_cache = {}  # Cache loaded models
+_device = None
+_model_dir = None
+_image_cropper = None
 
 
-def analyze_texture(face_img: np.ndarray) -> float:
-    """
-    Analyze texture using Laplacian variance.
-    Photos/screens typically have different texture patterns than real skin.
+def _initialize_anti_spoofing():
+    """Initialize anti-spoofing system (lazy loading)."""
+    global _device, _model_dir, _image_cropper
     
-    Args:
-        face_img: Face image as numpy array (BGR format)
-        
-    Returns:
-        Texture score (higher = more likely live)
-    """
-    # Convert to grayscale
-    gray = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY) if len(face_img.shape) == 3 else face_img
+    if _device is not None:
+        return
     
-    # Calculate Laplacian variance
-    laplacian = cv2.Laplacian(gray, cv2.CV_64F)
-    variance = laplacian.var()
+    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Anti-spoofing initialized on device: {_device}")
     
-    # Normalize score (typical range: 0-500, photos often < 100, live faces > 150)
-    # Higher variance = more texture = more likely live
-    # Balanced thresholds - strict on photos, lenient on live video
-    if variance < 35:
-        return 0.2  # Very blurry/low texture (likely photo)
-    elif variance < 65:
-        return 0.4  # Low texture (probably photo)
-    elif variance < 105:
-        return 0.65  # Moderate-low texture (could be photo or poor video)
-    elif variance < 155:
-        return 0.8  # Moderate texture (likely live)
-    elif variance < 250:
-        return 0.95  # Good texture (very likely live)
+    # Find model directory
+    model_dir_paths = [
+        "backend/models/silent-face-anti-spoofing/model",
+        "models/silent-face-anti-spoofing/model",
+        "../models/silent-face-anti-spoofing/model",
+    ]
+    
+    for path in model_dir_paths:
+        if Path(path).exists():
+            _model_dir = path
+            break
+    
+    if _model_dir is None:
+        print("⚠ Warning: Anti-spoofing model directory not found")
+        print("  Expected paths:")
+        for path in model_dir_paths:
+            print(f"    - {path}")
     else:
-        return 1.0  # High texture (definitely live)
+        print(f"✓ Model directory found: {_model_dir}")
+    
+    _image_cropper = CropImage()
 
 
-def analyze_color_distribution(face_img: np.ndarray) -> float:
+def _load_model(model_path):
     """
-    Analyze color distribution patterns.
-    Photos often have different color characteristics than live faces.
+    Load a single model from file path.
+    Returns: (model, model_info) or (None, None) if failed
+    """
+    global _models_cache, _device
+    
+    # Check cache
+    if model_path in _models_cache:
+        return _models_cache[model_path]
+    
+    try:
+        model_name = os.path.basename(model_path)
+        h_input, w_input, model_type, scale = parse_model_name(model_name)
+        kernel_size = get_kernel(h_input, w_input)
+        
+        # Create model
+        model_class = MODEL_MAPPING.get(model_type)
+        if model_class is None:
+            print(f"⚠ Unknown model type: {model_type}")
+            return None, None
+        
+        model = model_class(conv6_kernel=kernel_size).to(_device)
+        
+        # Load weights
+        state_dict = torch.load(model_path, map_location=_device)
+        
+        # Handle 'module.' prefix
+        keys = iter(state_dict)
+        first_layer_name = next(keys)
+        if first_layer_name.find('module.') >= 0:
+            new_state_dict = OrderedDict()
+            for key, value in state_dict.items():
+                name_key = key[7:]  # Remove 'module.' prefix
+                new_state_dict[name_key] = value
+            state_dict = new_state_dict
+        
+        model.load_state_dict(state_dict)
+        model.eval()
+        
+        model_info = {
+            'h_input': h_input,
+            'w_input': w_input,
+            'model_type': model_type,
+            'scale': scale,
+            'kernel_size': kernel_size
+        }
+        
+        # Cache model
+        _models_cache[model_path] = (model, model_info)
+        
+        return model, model_info
+        
+    except Exception as e:
+        print(f"Error loading model {model_path}: {e}")
+        import traceback
+        traceback.print_exc()
+        return None, None
+
+
+def _predict_with_model(img, model_path):
+    """
+    Run prediction with a single model.
+    Returns: prediction array or None
+    """
+    global _device, _image_cropper
+    
+    model, model_info = _load_model(model_path)
+    if model is None:
+        return None
+    
+    try:
+        # Prepare image
+        h_input = model_info['h_input']
+        w_input = model_info['w_input']
+        scale = model_info['scale']
+        
+        # Transform image
+        test_transform = Compose([ToTensor()])
+        img_tensor = test_transform(img)
+        img_tensor = img_tensor.unsqueeze(0).to(_device)
+        
+        # Run inference
+        with torch.no_grad():
+            result = model.forward(img_tensor)
+            result = F.softmax(result).cpu().numpy()
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error running prediction with {model_path}: {e}")
+        return None
+
+
+def is_live(face_img: np.ndarray, bbox=None, threshold: float = 0.5) -> bool:
+    """
+    Check if face is live (not a photo/spoof) using MiniFASNet models.
+    
+    This function uses the proper approach from Silent-Face-Anti-Spoofing:
+    - Loads all models from the model directory
+    - Generates patches with different scales for each model
+    - Sums predictions from all models
+    - Makes final decision based on argmax
     
     Args:
         face_img: Face image as numpy array (BGR format)
+        bbox: Bounding box [x, y, w, h] for face. If None, uses full image.
+        threshold: Threshold for real face probability (not used in original approach,
+                  but kept for compatibility. Original uses argmax)
         
     Returns:
-        Color score (higher = more likely live)
+        True if live, False if spoof
     """
-    if len(face_img.shape) != 3:
-        return 0.5  # Can't analyze color if grayscale
+    global _model_dir, _image_cropper
     
-    # Convert to HSV for better color analysis
-    hsv = cv2.cvtColor(face_img, cv2.COLOR_BGR2HSV)
-    
-    # Calculate color variance in each channel
-    h_var = np.var(hsv[:, :, 0])
-    s_var = np.var(hsv[:, :, 1])
-    v_var = np.var(hsv[:, :, 2])
-    
-    # Live faces typically have more color variation
-    # Photos/screens often have more uniform colors
-    total_variance = (h_var + s_var + v_var) / 3.0
-    
-    # Normalize (typical range: 0-10000, photos often < 2000, live > 3000)
-    # Balanced thresholds - strict on photos, lenient on live video
-    if total_variance < 900:
-        return 0.3  # Very uniform colors (likely photo)
-    elif total_variance < 1700:
-        return 0.5  # Low color variation (probably photo)
-    elif total_variance < 2700:
-        return 0.7  # Moderate-low variation (could be photo or video)
-    elif total_variance < 4000:
-        return 0.9  # Moderate variation (likely live)
-    else:
-        return 1.0  # High variation (definitely live)
-
-
-def analyze_edge_patterns(face_img: np.ndarray) -> float:
-    """
-    Analyze edge patterns using Canny edge detection.
-    Photos may have different edge characteristics (too sharp or too uniform).
-    
-    Args:
-        face_img: Face image as numpy array (BGR format)
-        
-    Returns:
-        Edge score (higher = more likely live)
-    """
-    # Convert to grayscale
-    gray = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY) if len(face_img.shape) == 3 else face_img
-    
-    # Apply Gaussian blur to reduce noise
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    
-    # Canny edge detection
-    edges = cv2.Canny(blurred, 50, 150)
-    
-    # Calculate edge density
-    edge_density = np.sum(edges > 0) / (edges.shape[0] * edges.shape[1])
-    
-    # Live faces typically have moderate edge density (0.1-0.3)
-    # Photos may have very high (over-sharpened) or very low (blurry) edge density
-    # Balanced detection - strict on photos, lenient on live video
-    if edge_density < 0.03:
-        return 0.2  # Too blurry, likely photo
-    elif edge_density < 0.08:
-        return 0.45  # Low edge density, might be photo
-    elif 0.10 <= edge_density <= 0.30:
-        return 1.0  # Good range for live face
-    elif edge_density > 0.5:
-        return 0.3  # Too sharp/artificial, likely printed photo
-    elif edge_density > 0.38:
-        return 0.55  # High edge density, suspicious
-    else:
-        return 0.75  # Moderate score (acceptable)
-
-
-def analyze_face_quality(face_img: np.ndarray) -> float:
-    """
-    Analyze overall face image quality.
-    Photos may have artifacts, compression, or unrealistic quality.
-    
-    Args:
-        face_img: Face image as numpy array (BGR format)
-        
-    Returns:
-        Quality score (higher = more likely live)
-    """
-    # Convert to grayscale
-    gray = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY) if len(face_img.shape) == 3 else face_img
-    
-    # Calculate image sharpness using gradient magnitude
-    gx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
-    gy = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
-    gradient_magnitude = np.sqrt(gx**2 + gy**2)
-    sharpness = np.mean(gradient_magnitude)
-    
-    # Normalize (typical range: 0-100, good quality: 20-60)
-    # Photos often have compression artifacts or unrealistic sharpness
-    # Balanced thresholds - lenient for live video
-    if sharpness < 8:
-        return 0.3  # Too blurry, likely photo
-    elif sharpness < 16:
-        return 0.55  # Low sharpness, might be photo
-    elif 18 <= sharpness <= 62:
-        return 1.0  # Good quality range (live video)
-    elif sharpness > 80:
-        return 0.4  # Too sharp/artificial, likely photo
-    elif sharpness > 70:
-        return 0.65  # High sharpness, suspicious but acceptable
-    else:
-        return 0.85  # Acceptable
-
-
-def analyze_compression_artifacts(face_img: np.ndarray) -> float:
-    """
-    Detect JPEG compression artifacts which are common in photos.
-    Live video typically has less compression artifacts.
-    
-    Args:
-        face_img: Face image as numpy array (BGR format)
-        
-    Returns:
-        Compression score (higher = more likely live, less compression)
-    """
-    # Convert to grayscale
-    gray = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY) if len(face_img.shape) == 3 else face_img
-    
-    # Apply DCT (Discrete Cosine Transform) to detect JPEG compression blocks
-    # JPEG compression creates 8x8 block patterns
-    h, w = gray.shape
-    
-    # Check for block artifacts by analyzing high-frequency components
-    # Compressed images have more uniform blocks
-    block_size = 8
-    block_variance_sum = 0
-    block_count = 0
-    
-    for y in range(0, h - block_size, block_size):
-        for x in range(0, w - block_size, block_size):
-            block = gray[y:y+block_size, x:x+block_size]
-            block_var = np.var(block)
-            block_variance_sum += block_var
-            block_count += 1
-    
-    if block_count == 0:
-        return 0.5  # Can't analyze
-    
-    avg_block_variance = block_variance_sum / block_count
-    
-    # Low variance in blocks = more compression artifacts = likely photo
-    # High variance = less compression = likely live video
-    # Balanced thresholds - lenient for live video
-    if avg_block_variance < 45:
-        return 0.35  # Heavy compression, likely photo
-    elif avg_block_variance < 95:
-        return 0.6  # Moderate compression, suspicious but could be video
-    elif avg_block_variance < 200:
-        return 0.85  # Low compression, likely live
-    else:
-        return 1.0  # Very low compression, definitely live
-
-
-def analyze_lighting_consistency(face_img: np.ndarray) -> float:
-    """
-    Analyze lighting consistency across the face.
-    Photos/screens may have unrealistic or inconsistent lighting.
-    
-    Args:
-        face_img: Face image as numpy array (BGR format)
-        
-    Returns:
-        Lighting score (higher = more likely live)
-    """
-    # Convert to grayscale
-    gray = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY) if len(face_img.shape) == 3 else face_img
-    
-    # Divide face into regions (left, right, top, bottom)
-    h, w = gray.shape
-    left = gray[:, :w//2]
-    right = gray[:, w//2:]
-    top = gray[:h//2, :]
-    bottom = gray[h//2:, :]
-    
-    # Calculate mean brightness for each region
-    left_mean = np.mean(left)
-    right_mean = np.mean(right)
-    top_mean = np.mean(top)
-    bottom_mean = np.mean(bottom)
-    
-    # Calculate variance in lighting across regions
-    means = [left_mean, right_mean, top_mean, bottom_mean]
-    lighting_variance = np.var(means)
-    
-    # Live faces typically have some natural lighting variation
-    # Photos may have very uniform or very inconsistent lighting
-    # Good range: 50-500 variance
-    if 50 <= lighting_variance <= 500:
-        return 1.0  # Natural lighting variation
-    elif lighting_variance < 20:
-        return 0.5  # Too uniform, might be photo
-    elif lighting_variance > 1000:
-        return 0.6  # Too inconsistent, might be screen reflection
-    else:
-        return 0.8  # Acceptable
-
-
-def is_live(face_img: np.ndarray, threshold: float = 0.48) -> Tuple[bool, Dict[str, float]]:
-    """
-    Check if face is live (not a photo/spoof) using multiple detection methods.
-    
-    Args:
-        face_img: Face image as numpy array (BGR format)
-        threshold: Minimum score to consider face as live (0.0-1.0)
-        
-    Returns:
-        Tuple of (is_live: bool, scores: dict with detailed scores)
-    """
     if face_img is None or face_img.size == 0:
-        return False, {"error": "Invalid face image"}
+        print("ANTI-SPOOFING ERROR: Invalid face image provided")
+        return False
     
-    # Ensure minimum size for analysis
-    if face_img.shape[0] < 50 or face_img.shape[1] < 50:
-        return False, {"error": "Face image too small"}
+    _initialize_anti_spoofing()
     
-    # Run all analysis methods
-    texture_score = analyze_texture(face_img)
-    color_score = analyze_color_distribution(face_img)
-    edge_score = analyze_edge_patterns(face_img)
-    quality_score = analyze_face_quality(face_img)
-    lighting_score = analyze_lighting_consistency(face_img)
-    compression_score = analyze_compression_artifacts(face_img)  # New check for JPEG artifacts
+    if _model_dir is None:
+        print("⚠ Anti-spoofing models not found, rejecting for safety")
+        return False
     
-    # Weighted combination of scores
-    # Adjusted weights to be stricter on photos
-    # Texture, edge, and compression detection are most reliable for detecting photos
-    weights = {
-        'texture': 0.28,      # Most important - photos have different texture
-        'edge': 0.22,         # Very important - photos have different edge patterns
-        'compression': 0.18,  # Important - photos often have JPEG compression artifacts
-        'color': 0.18,        # Important - photos have different color patterns
-        'quality': 0.10,      # Useful for detecting artifacts
-        'lighting': 0.04      # Least reliable but adds value
-    }
-    
-    final_score = (
-        texture_score * weights['texture'] +
-        color_score * weights['color'] +
-        edge_score * weights['edge'] +
-        quality_score * weights['quality'] +
-        lighting_score * weights['lighting'] +
-        compression_score * weights['compression']
-    )
-    
-    is_live_result = final_score >= threshold
-    
-    scores = {
-        'final_score': float(final_score),
-        'texture': float(texture_score),
-        'color': float(color_score),
-        'edge': float(edge_score),
-        'quality': float(quality_score),
-        'lighting': float(lighting_score),
-        'compression': float(compression_score),
-        'threshold': threshold,
-        'is_live': is_live_result
-    }
-    
-    return is_live_result, scores
-
+    try:
+        # Get all model files
+        model_files = [f for f in os.listdir(_model_dir) if f.endswith('.pth')]
+        
+        if not model_files:
+            print("⚠ No model files found in model directory")
+            return False
+        
+        # Prepare bbox - if not provided, use full image
+        if bbox is None:
+            h, w = face_img.shape[:2]
+            bbox = [0, 0, w, h]
+        
+        # Sum predictions from all models
+        prediction = np.zeros((1, 3))  # Default: 3 classes (real, print, replay)
+        
+        for model_name in model_files:
+            model_path = os.path.join(_model_dir, model_name)
+            
+            # Parse model info
+            h_input, w_input, model_type, scale = parse_model_name(model_name)
+            
+            # Generate patch/crop based on scale
+            if scale is None:
+                # Original image (no crop)
+                img = cv2.resize(face_img, (w_input, h_input))
+            else:
+                # Crop with scale
+                param = {
+                    "org_img": face_img,
+                    "bbox": bbox,
+                    "scale": scale,
+                    "out_w": w_input,
+                    "out_h": h_input,
+                    "crop": True,
+                }
+                img = _image_cropper.crop(**param)
+            
+            # Run prediction
+            result = _predict_with_model(img, model_path)
+            
+            if result is not None:
+                # Ensure same number of classes
+                if result.shape[1] == prediction.shape[1]:
+                    prediction += result
+                else:
+                    print(f"⚠ Model {model_name} has {result.shape[1]} classes, expected {prediction.shape[1]}")
+        
+        # Make final decision
+        label = np.argmax(prediction)
+        value = prediction[0][label] / len(model_files)  # Average probability
+        
+        # Class 1 = Real Face (according to original test.py)
+        # Class 0 = Fake Face (print or replay)
+        is_live_result = (label == 1)
+        
+        # Logging
+        print("=" * 70)
+        print("ANTI-SPOOFING ANALYSIS (Multi-Model Fusion):")
+        print(f"  Models Used:           {len(model_files)}")
+        print(f"  Prediction:            {prediction[0]}")
+        print(f"  Label:                 {label} ({'REAL' if label == 1 else 'FAKE'})")
+        print(f"  Confidence:            {value:.4f}")
+        print(f"  Decision:              {'✓ LIVE FACE' if is_live_result else '✗ SPOOF DETECTED'}")
+        print(f"  Face Size:             {face_img.shape}")
+        if bbox:
+            print(f"  BBox:                  {bbox}")
+        print("=" * 70)
+        
+        return is_live_result
+        
+    except Exception as e:
+        print(f"ANTI-SPOOFING ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        # For safety, reject if error occurs
+        return False

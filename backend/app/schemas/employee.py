@@ -6,7 +6,7 @@ from datetime import datetime
 class EmployeeBase(BaseModel):
     emp_code: str
     name: str
-    role: str
+    role: Optional[str] = None
 
 
 class EmployeeCreate(EmployeeBase):

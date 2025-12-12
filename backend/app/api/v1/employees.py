@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from app.db.base import get_db
 from app.schemas.employee import FaceRegistrationResponse
@@ -14,14 +14,14 @@ router = APIRouter()
 class EmployeeCreateRequest(BaseModel):
     emp_code: str
     name: str
-    role: str
+    role: Optional[str] = None
 
 
 class EmployeeResponse(BaseModel):
     id: int
     emp_code: str
     name: str
-    role: str
+    role: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -9,7 +9,7 @@ const API_BASE_URL = '/api';
 
 function CheckIn() {
   const navigate = useNavigate();
-  const [cameraId, setCameraId] = useState('1');
+  const [cameraId, setCameraId] = useState('1'); // Default camera ID, hidden from UI
   const [stream, setStream] = useState(null);
   const [status, setStatus] = useState({ type: 'info', message: 'Ready to check in' });
   const [checkinResult, setCheckinResult] = useState(null);
@@ -28,21 +28,21 @@ function CheckIn() {
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  // const fileInputRef = useRef(null); // Photo upload disabled for security
   const regFileInputRef = useRef(null);
 
-  // Fetch available cameras on mount
+  // Fetch available cameras on mount and set default
   const fetchCameras = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/v1/cameras`);
       const camerasList = response.data || [];
-      if (camerasList.length > 0 && !cameraId) {
+      if (camerasList.length > 0) {
         setCameraId(camerasList[0].id.toString());
       }
     } catch (error) {
       console.error('Failed to fetch cameras:', error);
+      // Keep default camera ID '1'
     }
-  }, [cameraId]);
+  }, []);
 
   useEffect(() => {
     fetchCameras();
@@ -156,6 +156,7 @@ function CheckIn() {
     }
   };
 
+
   const getCurrentLocation = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -226,8 +227,6 @@ function CheckIn() {
         longitude: result.longitude,
         locationValidated: result.location_validated,
         distanceFromStore: result.distance_from_store,
-        antiSpoofScore: result.anti_spoof_score,
-        isLive: result.is_live,
       });
 
       setStatus({
@@ -284,6 +283,7 @@ function CheckIn() {
     } catch (error) {
       let errorMsg = 'Check-in failed';
       let shouldShowRegistration = false;
+      let isSpoofingDetected = false;
       
       if (error.response) {
         // Handle different error response formats
@@ -302,16 +302,14 @@ function CheckIn() {
               .map(err => {
                 if (typeof err === 'string') return err;
                 if (typeof err === 'object' && err !== null) {
-                  // Extract message from validation error object
                   const msg = err.msg || err.message || 'Invalid value';
                   const loc = Array.isArray(err.loc) ? err.loc.join('.') : '';
                   const result = loc ? `${loc}: ${msg}` : String(msg);
-                  // Ensure result is always a string
                   return typeof result === 'string' ? result : String(result);
                 }
                 return String(err);
               })
-              .filter(msg => msg && typeof msg === 'string' && msg.trim()) // Remove empty messages
+              .filter(msg => msg && typeof msg === 'string' && msg.trim())
               .join(', ') || 'Validation error';
           } else if (typeof responseData.detail === 'object') {
             errorMsg = JSON.stringify(responseData.detail);
@@ -321,27 +319,39 @@ function CheckIn() {
             ? responseData.message
             : JSON.stringify(responseData.message);
         } else if (Array.isArray(responseData)) {
-          // FastAPI validation errors array (direct array response)
           errorMsg = responseData
             .map(err => {
               if (typeof err === 'string') return err;
               if (typeof err === 'object' && err !== null) {
-                // Extract message from validation error object
                 const msg = err.msg || err.message || 'Invalid value';
                 const loc = Array.isArray(err.loc) ? err.loc.join('.') : '';
                 const result = loc ? `${loc}: ${msg}` : String(msg);
-                // Ensure result is always a string
                 return typeof result === 'string' ? result : String(result);
               }
               return String(err);
             })
-            .filter(msg => msg && typeof msg === 'string' && msg.trim()) // Remove empty messages
+            .filter(msg => msg && typeof msg === 'string' && msg.trim())
             .join(', ') || 'Validation error';
         } else if (typeof responseData === 'object') {
           errorMsg = JSON.stringify(responseData);
         }
         
-        // Check if this is a face-related error that should trigger registration
+        const errorMsgLower = errorMsg.toLowerCase();
+        
+        // Check for spoofing detection (403 Forbidden)
+        if (statusCode === 403) {
+          const spoofingKeywords = ['spoofing', 'spoof', 'photo', 'picture', 'live face', 'liveness'];
+          isSpoofingDetected = spoofingKeywords.some(keyword => errorMsgLower.includes(keyword));
+          
+          if (isSpoofingDetected) {
+            errorMsg = '⚠️ Detected use of photo instead of live face. Please use camera to scan your face directly.';
+            setStatus({ type: 'error', message: errorMsg });
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Check if this is a face recognition error (not spoofing)
         const faceErrorKeywords = [
           'not recognized',
           'no face detected',
@@ -357,105 +367,38 @@ function CheckIn() {
           'face detection failed'
         ];
         
-        const errorMsgLower = errorMsg.toLowerCase();
-        
         // For 404, 400, or 500 errors, check if it's face-related
-        // Exclude "Camera not found" as that's a different issue
         if (statusCode === 404 || statusCode === 400 || statusCode === 500) {
           if (errorMsgLower.includes('camera not found')) {
-            shouldShowRegistration = false; // Camera error, not face error
+            shouldShowRegistration = false;
+            errorMsg = 'Camera not found. Please contact administrator.';
           } else {
             // Check if any face-related keyword matches
             shouldShowRegistration = faceErrorKeywords.some(keyword => errorMsgLower.includes(keyword));
             
-            // For 500 errors, check if it might be face-related (e.g., AI model errors)
-            if (statusCode === 500) {
-              // If error message suggests face/AI issues, show registration
-              const aiErrorKeywords = ['face', 'embedding', 'recognition', 'detection', 'model', 'ai'];
-              if (aiErrorKeywords.some(keyword => errorMsgLower.includes(keyword))) {
-                shouldShowRegistration = true;
-              }
-              // For generic 500 errors during check-in, also offer registration as fallback
-              // This helps when backend errors occur during face processing
-              if (!shouldShowRegistration) {
-                console.log('500 error during check-in, offering registration as fallback');
-                // Don't auto-show, but add button to register
-              }
-            }
-            
-            // Fallback: if 404/400 and not camera error, assume face-related
-            // This ensures registration modal shows even if error message format changes
-            if (!shouldShowRegistration && (statusCode === 404 || statusCode === 400)) {
-              console.log(`${statusCode} error without matching keywords, assuming face-related`);
-              shouldShowRegistration = true;
+            if (shouldShowRegistration) {
+              errorMsg = '❌ Face not recognized. Please register your account.';
             }
           }
         }
-        
-        console.log('Error analysis:', {
-          statusCode,
-          errorMsg: errorMsgLower,
-          shouldShowRegistration,
-          matchedKeywords: faceErrorKeywords.filter(k => errorMsgLower.includes(k))
-        });
-        
       } else if (error.message) {
         errorMsg = error.message;
-        // Also check error.message for face-related errors
-        const errorMsgLower = errorMsg.toLowerCase();
-        const faceErrorKeywords = [
-          'not recognized',
-          'no face detected',
-          'invalid face embedding',
-          'face not found',
-          'employee not found',
-          'no face',
-          'not found',
-          'unrecognized'
-        ];
-        shouldShowRegistration = 
-          (error.response?.status === 404 || error.response?.status === 400) && 
-          faceErrorKeywords.some(keyword => errorMsgLower.includes(keyword));
       }
       
-      // If face-related error, show registration modal
-      if (shouldShowRegistration) {
-        console.log('Showing registration modal for error:', errorMsg);
+      // If face recognition error (not spoofing), show registration modal
+      if (shouldShowRegistration && !isSpoofingDetected) {
         // Save the captured image for registration
         if (imageFile instanceof Blob) {
           setCapturedImageForReg(imageFile);
-          console.log('Saved captured image for registration');
         }
         setShowRegistrationModal(true);
-        setStatus({ type: 'error', message: 'Face not recognized. Please register your account.' });
+        setStatus({ type: 'error', message: errorMsg });
         setLoading(false);
         return;
       }
       
-      console.log('Not showing registration modal. Error:', errorMsg, 'shouldShowRegistration:', shouldShowRegistration);
-      
-      // Fallback: If check-in failed and it's not a camera error, offer registration option
-      const finalErrorMsg = typeof errorMsg === 'string' ? errorMsg : String(errorMsg || 'Check-in failed');
-      const errorMsgLower = finalErrorMsg.toLowerCase();
-      const isCameraError = errorMsgLower.includes('camera not found');
-      
-      // If not camera error and not already showing registration, add option to register
-      if (!isCameraError && !shouldShowRegistration && error.response?.status) {
-        const statusCode = error.response.status;
-        // For 404, 400, or 500 errors, offer registration option
-        if (statusCode === 404 || statusCode === 400 || statusCode === 500) {
-          // Add a button to open registration modal
-          setStatus({ 
-            type: 'error', 
-            message: finalErrorMsg,
-            showRegisterButton: true 
-          });
-        } else {
-          setStatus({ type: 'error', message: finalErrorMsg });
-        }
-      } else {
-        setStatus({ type: 'error', message: finalErrorMsg });
-      }
+      // For other errors, show error message
+      setStatus({ type: 'error', message: errorMsg });
       setLoading(false);
     }
   };
@@ -620,9 +563,6 @@ function CheckIn() {
       <div className="kiosk-container">
         <h1 className="kiosk-title">AI Attendance Kiosk</h1>
         <p className="kiosk-subtitle">Face Recognition Check-in</p>
-        <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '5px' }}>
-          ⚠️ Live camera required - Photo upload disabled for security
-        </p>
 
         <div className="camera-section">
           <div className="camera-preview">
@@ -665,8 +605,6 @@ function CheckIn() {
                 </button>
               </>
             )}
-
-            {/* Photo upload disabled - only live camera check-in allowed for security */}
           </div>
         </div>
 
@@ -698,18 +636,8 @@ function CheckIn() {
             <div className="checkin-details">
               <p><strong>Employee ID:</strong> {checkinResult.employeeId}</p>
               <p><strong>Name:</strong> {checkinResult.employeeName}</p>
-              <p><strong>Time:</strong> {new Date(checkinResult.timestamp).toLocaleString('vi-VN')}</p>
+              <p><strong>Time:</strong> {new Date(checkinResult.timestamp).toLocaleString('en-US')}</p>
               <p><strong>Confidence:</strong> {(checkinResult.confidence * 100).toFixed(1)}%</p>
-              {checkinResult.antiSpoofScore !== null && checkinResult.antiSpoofScore !== undefined && (
-                <p>
-                  <strong>Liveness Score:</strong> {(checkinResult.antiSpoofScore * 100).toFixed(1)}%
-                  {checkinResult.isLive ? (
-                    <span style={{ color: '#28a745', marginLeft: '10px', fontWeight: '600' }}>✓ Live Face Detected</span>
-                  ) : (
-                    <span style={{ color: '#dc3545', marginLeft: '10px', fontWeight: '600' }}>⚠ Spoof Detected</span>
-                  )}
-                </p>
-              )}
               {checkinResult.latitude && checkinResult.longitude && (
                 <>
                   <p><strong>Location:</strong> {checkinResult.latitude.toFixed(6)}, {checkinResult.longitude.toFixed(6)}</p>
@@ -869,4 +797,5 @@ function App() {
 }
 
 export default App;
+
 

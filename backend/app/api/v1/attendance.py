@@ -7,10 +7,11 @@ from app.schemas.attendance import CheckInResponse, CheckInHistoryItem
 from app.models.orm_models import Employee, AttendanceLog, Camera, FaceEmbedding, Store, Schedule
 from app.ai.face_recog import get_face_embedding_from_image, align_face
 from app.ai.anti_spoof import is_live
-from app.core.config import settings
 import numpy as np
-import math
 import cv2
+import io
+from PIL import Image
+import math
 
 router = APIRouter()
 
@@ -18,8 +19,6 @@ router = APIRouter()
 SIMILARITY_THRESHOLD = 0.6  # Adjust based on your needs (0.6-0.7 is typical)
 # Minimum distance from store to validate location (in meters)
 MIN_DISTANCE_FROM_STORE = 30.0  # 10 meters
-# Anti-spoofing threshold (from config, can be overridden via environment variable)
-ANTI_SPOOF_THRESHOLD = settings.ANTI_SPOOF_THRESHOLD
 
 
 def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -69,88 +68,80 @@ async def check_in(
     # Read image
     image_bytes = await image.read()
     
-    # Convert image bytes to numpy array for anti-spoofing analysis
+    # Convert bytes to numpy array for anti-spoofing
     nparr = np.frombuffer(image_bytes, np.uint8)
     image_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if image_bgr is None:
-        raise HTTPException(status_code=400, detail="Invalid image format")
+        # Try PIL as fallback
+        image = Image.open(io.BytesIO(image_bytes))
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        image_bgr = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     
     # Detect faces and get embeddings using real AI models
     face_boxes, embeddings = get_face_embedding_from_image(image_bytes)
     
     if not face_boxes or not embeddings:
         raise HTTPException(status_code=404, detail="No face detected in image")
+    
+    # Validate: Only allow check-in with exactly 1 person
+    if len(face_boxes) > 1 or len(embeddings) > 1:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Multiple faces detected ({len(face_boxes)} faces). Please ensure only one person is in the image for check-in."
+        )
 
-    # Anti-spoofing check #1: Detect if someone is holding a photo
-    # If someone holds a photo, we'll detect 2 faces close together (overlapping or very near)
-    # Background people will have faces far apart, so we only reject if faces are close together
-    if settings.MULTI_FACE_DETECTION_ENABLED:
-        face_count = len(face_boxes)
+    # Extract face region for anti-spoofing check
+    first_face_box = face_boxes[0]
+    face_crop = align_face(first_face_box, image_bgr)
+    
+    # Convert bbox format: YOLO format [x1, y1, x2, y2] to [x, y, w, h]
+    # face_boxes format from YOLO: [[x1, y1, x2, y2, conf], ...]
+    bbox_x1, bbox_y1, bbox_x2, bbox_y2 = first_face_box[:4]
+    bbox = [int(bbox_x1), int(bbox_y1), int(bbox_x2 - bbox_x1), int(bbox_y2 - bbox_y1)]
+    
+    # Check if face is live (anti-spoofing) using MiniFASNet model
+    # Note: is_live now uses the full image with bbox, not just the crop
+    print(f"\n{'='*60}")
+    print(f"ANTI-SPOOFING CHECK STARTED")
+    print(f"Face bbox: {bbox}")
+    print(f"Image size: {image_bgr.shape}")
+    print(f"{'='*60}\n")
+    
+    try:
+        # Pass full image and bbox - the function will handle cropping with different scales
+        is_live_result = is_live(image_bgr, bbox=bbox, threshold=0.5)
         
-        if face_count > 1:
-            # Check if any two faces are close together (likely someone holding a photo)
-            # Calculate distances between all face pairs
-            image_height, image_width = image_bgr.shape[:2]
+        if not is_live_result:
+            print(f"\n{'='*60}")
+            print(f"❌ ANTI-SPOOFING: SPOOF DETECTED!")
+            print(f"   Rejecting check-in attempt.")
+            print(f"{'='*60}\n")
+            raise HTTPException(
+                status_code=403, 
+                detail="Face spoofing detected. Please use a live face for check-in."
+            )
+        else:
+            print(f"\n{'='*60}")
+            print(f"✓ ANTI-SPOOFING: LIVE FACE CONFIRMED")
+            print(f"   Proceeding with face recognition...")
+            print(f"{'='*60}\n")
             
-            close_faces_detected = False
-            for i in range(len(face_boxes)):
-                for j in range(i + 1, len(face_boxes)):
-                    # Get face centers
-                    x1_1, y1_1, x2_1, y2_1, _ = face_boxes[i]
-                    x1_2, y1_2, x2_2, y2_2, _ = face_boxes[j]
-                    
-                    center_x1 = (x1_1 + x2_1) / 2
-                    center_y1 = (y1_1 + y2_1) / 2
-                    center_x2 = (x1_2 + x2_2) / 2
-                    center_y2 = (y1_2 + y2_2) / 2
-                    
-                    # Calculate distance between face centers
-                    face_distance = math.sqrt((center_x2 - center_x1)**2 + (center_y2 - center_y1)**2)
-                    
-                    # Calculate average face size
-                    face1_size = max(x2_1 - x1_1, y2_1 - y1_1)
-                    face2_size = max(x2_2 - x1_2, y2_2 - y1_2)
-                    avg_face_size = (face1_size + face2_size) / 2
-                    
-                    # If faces are within 2.5x the average face size, they're close together
-                    # This indicates someone might be holding a photo
-                    if face_distance < avg_face_size * 2.5:
-                        close_faces_detected = True
-                        break
-                
-                if close_faces_detected:
-                    break
-            
-            if close_faces_detected:
-                raise HTTPException(
-                    status_code=403,
-                    detail=f"Multiple faces detected close together. This may indicate a photo or screen is being used. "
-                           f"Please ensure only your face is visible and no photos or screens are in the frame."
-                )
-
-    # Use the first detected face for matching
-    face_embedding = embeddings[0]
-    first_face_bbox = face_boxes[0]
-    
-    # Anti-spoofing check: verify face is live (not a photo/spoof)
-    is_live_result = True
-    spoof_scores = {'final_score': 1.0, 'is_live': True}  # Default values
-    
-    if settings.ANTI_SPOOF_ENABLED:
-        face_crop = align_face(first_face_bbox, image_bgr)
-        is_live_result, spoof_scores = is_live(face_crop, threshold=ANTI_SPOOF_THRESHOLD)
-    
-    if not is_live_result:
-        # Log the scores for debugging
-        print(f"Anti-spoofing check failed. Scores: {spoof_scores}")
-        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"\n{'='*60}")
+        print(f"❌ ANTI-SPOOFING ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        print(f"{'='*60}\n")
         raise HTTPException(
             status_code=403,
-            detail=f"Liveness check failed. Score: {spoof_scores.get('final_score', 0):.3f} "
-                   f"(needs {ANTI_SPOOF_THRESHOLD:.2f}). "
-                   f"This might be due to poor lighting, camera quality, or image compression. "
-                   f"Please try again with better lighting or adjust ANTI_SPOOF_THRESHOLD in config."
+            detail="Unable to verify face liveness. Please try again with a live face."
         )
+    
+    # Use the first detected face for matching
+    face_embedding = embeddings[0]
     
     # Validate embedding
     if len(face_embedding) == 0 or np.all(face_embedding == 0):
@@ -265,9 +256,7 @@ async def check_in(
         latitude=latitude,
         longitude=longitude,
         location_validated=location_validated == 1,
-        distance_from_store=distance_from_store,
-        anti_spoof_score=spoof_scores.get('final_score'),
-        is_live=is_live_result
+        distance_from_store=distance_from_store
     )
 
 

@@ -44,7 +44,7 @@ function EmployeeEditForm({ employee, onSave, onCancel }) {
       </div>
       <div className="form-group">
         <label>Role:</label>
-        <select value={role} onChange={(e) => setRole(e.target.value)} required>
+        <select value={role || 'employee'} onChange={(e) => setRole(e.target.value)} required>
           <option value="employee">Employee</option>
           <option value="manager">Manager</option>
           <option value="admin">Admin</option>
@@ -861,6 +861,10 @@ function Dashboard() {
                         <span>{record.store_name || 'N/A'}</span>
                       </div>
                       <div className="detail-row">
+                        <span className="detail-label">Camera:</span>
+                        <span>{record.camera_name || `Camera ${record.camera_id}`}</span>
+                      </div>
+                      <div className="detail-row">
                         <span className="detail-label">Confidence:</span>
                         <span>{(record.confidence * 100).toFixed(1)}%</span>
                       </div>
@@ -954,7 +958,7 @@ function Dashboard() {
                           <div className="manage-item-info">
                             <div><strong>ID:</strong> {emp.emp_code}</div>
                             <div><strong>Name:</strong> {emp.name}</div>
-                            <div><strong>Role:</strong> {emp.role}</div>
+                            <div><strong>Role:</strong> {emp.role || 'N/A'}</div>
                           </div>
                           <div className="manage-item-actions">
                             <button 
