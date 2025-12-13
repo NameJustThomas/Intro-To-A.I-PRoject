@@ -561,7 +561,7 @@ function CheckIn() {
   return (
     <div className="App">
       <div className="kiosk-container">
-        <h1 className="kiosk-title">AI Attendance Kiosk</h1>
+        <h1 className="kiosk-title">AI Attendance System</h1>
         <p className="kiosk-subtitle">Face Recognition Check-in</p>
 
         <div className="camera-section">

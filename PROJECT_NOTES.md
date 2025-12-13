@@ -15,258 +15,308 @@
 5. **Testing:** Minimal unit tests for health endpoint + register-face flow
 6. **Migrations:** Must create migration files and commit them
 
-## Implementation Progress
-
-### Task 1: Create repo skeleton with folders and README
-- [x] Status: COMPLETED
-- [x] Notes: All directory structure created as per scaffold section 1. README.md created with quickstart instructions.
-
-### Task 2: Add `infra/docker-compose.yml` and `backend/Dockerfile`
-- [x] Status: COMPLETED
-- [x] Notes: Docker compose with PostgreSQL 14, Redis 6, FastAPI backend, nginx. Backend Dockerfile created with Python 3.11-slim base. Nginx config added.
-
-### Task 3: Implement FastAPI skeleton with `main.py` and health endpoint
-- [x] Status: COMPLETED
-- [x] Notes: FastAPI app with CORS middleware, health endpoint at `/health`. All routers included (attendance, employees, cameras, environment, dashboard).
-
-### Task 4: Add OpenAPI YAML (docs/openapi.yaml) with endpoints
-- [x] Status: COMPLETED
-- [x] Notes: Complete OpenAPI 3.0.3 spec with all endpoints from scaffold section 2, including request/response schemas.
-
-### Task 5: Implement employee register endpoint stub
-- [x] Status: COMPLETED
-- [x] Notes: Endpoint accepts multiple images, stores employee and embeddings (stub vector) in DB. Uses face_recog module for detection and embedding extraction.
-
-### Task 6: Implement check-in endpoint stub
-- [x] Status: COMPLETED
-- [x] Notes: Endpoint accepts image, runs face detection + matching (stub algorithm with cosine similarity), stores attendance_log in database.
-
-### Task 7: Add sample CSV import script
-- [x] Status: COMPLETED
-- [x] Notes: Created `scripts/import_sample_data.py` to import employees and schedules from CSV files. Sample CSV files created in `scripts/sample_data/`.
-
-### Task 8: Add basic React dashboard skeleton
-- [x] Status: COMPLETED
-- [x] Notes: React dashboard created in `frontend/dashboard/` with App.js calling `/api/v1/dashboard/attendance-month`. Includes package.json, basic UI with filters and table display.
-
-### Task 9: Add unit tests for endpoints
-- [x] Status: COMPLETED
-- [x] Notes: Tests created for health endpoint (`test_health.py`) and employee register flow (`test_employee_register.py`). pytest.ini configured.
-
-### Task 10: Create migrations SQL and database init script
-- [x] Status: COMPLETED
-- [x] Notes: Migration file `infra/migrations/001_init.sql` created with all tables from scaffold section 5. Database init script `scripts/init_db.py` created.
-
-### Task 11: Add CONTRIBUTING.md and PR template
-- [x] Status: COMPLETED
-- [x] Notes: CONTRIBUTING.md created with development guidelines. PR template added at `.github/PULL_REQUEST_TEMPLATE.md`. Pre-commit config and EditorConfig added.
-
-### Task 12: Prepare README with setup instructions
-- [x] Status: COMPLETED
-- [x] Notes: README.md includes quickstart instructions from scaffold section 10. Architecture documentation added in `docs/architecture.md`.
-
-## Technical Decisions Made
-- **Python Version**: 3.11 (latest stable)
-- **FastAPI**: 0.104.1 with uvicorn
-- **Database**: PostgreSQL 14 with SQLAlchemy ORM
-- **Face Embeddings**: Stored as FLOAT8[] array in PostgreSQL (not raw images)
-- **AI Modules**: Stub implementations ready for real models (face_recog, people_count, anti_spoof)
-- **Testing**: pytest with pytest-cov for coverage
-- **CI/CD**: GitHub Actions workflow configured
-- **Frontend**: React 18.2.0 with Create React App structure
-- **Code Quality**: black, isort, flake8 with pre-commit hooks
-
-## File Structure Created
+## Project Structure
 ```
 ai-attendance/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py
-│   │   ├── api/v1/
+│   │   ├── api/
+│   │   │   └── v1/
+│   │   │       ├── attendance.py
+│   │   │       ├── cameras.py
+│   │   │       ├── dashboard.py
+│   │   │       ├── employees.py
+│   │   │       ├── environment.py
+│   │   │       ├── schedules.py
+│   │   │       └── stores.py
 │   │   ├── core/
+│   │   │   ├── config.py
+│   │   │   ├── logging_config.py
+│   │   │   └── security.py
 │   │   ├── models/
+│   │   │   └── orm_models.py  # SQLAlchemy ORM models
 │   │   ├── db/
+│   │   │   └── base.py
 │   │   ├── ai/
+│   │   │   ├── face_recog.py
+│   │   │   ├── anti_spoof.py
+│   │   │   ├── people_count.py
+│   │   │   ├── minifasnet.py
+│   │   │   ├── anti_spoof_utils.py
+│   │   │   ├── generate_patches.py
+│   │   │   └── transform.py
 │   │   └── schemas/
-│   └── Dockerfile
+│   │       ├── attendance.py
+│   │       └── employee.py
+│   ├── models/  # AI model files (binary data)
+│   │   ├── yolo-face/
+│   │   │   └── weights/
+│   │   │       └── yolov11m-face.pt  # 38.6 MB
+│   │   └── silent-face-anti-spoofing/
+│   │       └── model/
+│   │           ├── 2.7_80x80_MiniFASNetV2.pth  # 1.76 MB
+│   │           └── 4_0_0_80x80_MiniFASNetV1SE.pth  # 1.77 MB
+│   ├── tests/
+│   │   ├── test_health.py
+│   │   └── test_employee_register.py
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── pytest.ini
+│   └── yolo11n.pt  # Fallback model (5.35 MB, can be removed)
 ├── frontend/
 │   ├── dashboard/
+│   │   ├── src/
+│   │   │   ├── App.js
+│   │   │   └── index.js
+│   │   └── package.json
 │   └── kiosk_ui/
-├── mobile/
-│   └── flutter_app/
+│       ├── src/
+│       │   ├── App.js
+│       │   ├── Dashboard.js
+│       │   └── index.js
+│       └── package.json
 ├── infra/
 │   ├── docker-compose.yml
+│   ├── migrations/
+│   │   ├── 001_init.sql
+│   │   ├── 002_add_location_fields.sql
+│   │   └── 003_fix_is_on_time_type.sql
 │   └── nginx/
+│       └── nginx.conf
 ├── docs/
 │   ├── openapi.yaml
-│   └── architecture.md
+│   ├── architecture.md
+│   └── IMPLEMENTATION_SUMMARY.md
 ├── scripts/
+│   ├── init_db.py
+│   ├── import_sample_data.py
+│   ├── create_employee.py
+│   ├── create_store.py
+│   ├── README.md
 │   └── sample_data/
-└── README.md
+│       ├── employees.csv
+│       └── schedules.csv
+├── README.md
+├── SETUP.md
+├── PROJECT_NOTES.md
+├── CONTRIBUTING.md
+├── Makefile
+└── ai_attendance_for_cafe_project_scaffold.md
 ```
+
+**Note:** Two "models" directories exist:
+- `backend/app/models/` = ORM models (Python code) - SQLAlchemy models
+- `backend/models/` = AI model files (binary data) - Pre-trained model weights
+These serve different purposes and are intentional.
 
 ## Database Schema
 - stores (id, name, address)
 - cameras (id, store_id, name, rtsp_url, location)
-- employees (id, emp_code, name, role, created_at)
+- employees (id, emp_code, name, role, created_at) - role can be NULL
 - face_embeddings (id, employee_id, embedding, created_at)
 - schedules (id, employee_id, date, shift_start, shift_end)
 - attendance_logs (id, employee_id, timestamp, camera_id, confidence, snapshot_url)
 - environment_logs (id, camera_id, timestamp, people_count, brightness)
 
-## API Endpoints (from OpenAPI spec)
-1. POST `/v1/employee/register-face` - Register employee face
-2. POST `/v1/attendance/check-in` - Check in image/frame
-3. GET `/v1/dashboard/attendance-month` - Get monthly attendance summary
+## API Endpoints
+1. POST `/api/v1/employee/register-face` - Register employee face
+2. POST `/api/v1/attendance/check-in` - Check in image/frame (with anti-spoofing)
+3. GET `/api/v1/dashboard/attendance-month` - Get monthly attendance summary
+4. GET `/api/v1/cameras` - List cameras (with filtering)
+5. GET `/api/v1/cameras/{id}` - Get camera details
+6. GET `/api/v1/environment/logs` - Get environment logs (with filtering)
+7. POST `/api/v1/environment/logs` - Create environment log
 
-## AI Modules Required
-- `face_recog.py`: detect_faces(), align_face(), get_embedding()
-- `people_count.py`: count_people() using YOLO or MobileNet-SSD
-- `anti_spoof.py`: is_live() returning True/False
+## AI Modules (All Implemented)
+- `face_recog.py`: ✅ detect_faces(), align_face(), get_embedding() - Using YOLO-face + InsightFace
+- `people_count.py`: ✅ count_people() - Using YOLO11s
+- `anti_spoof.py`: ✅ is_live() - Using MiniFASNet multi-model fusion
 
-## Dependencies & Tools
-- **Backend**: FastAPI 0.104.1, SQLAlchemy 2.0.23, psycopg2-binary, uvicorn
+## Dependencies
+- **Backend**: FastAPI 0.104.1, SQLAlchemy 2.0.23, psycopg[binary]>=3.1.0, uvicorn
 - **Database**: PostgreSQL 14
 - **Cache**: Redis 6
-- **Containerization**: Docker & Docker Compose
-- **Reverse Proxy**: nginx stable
-- **Testing**: pytest 7.4.3, pytest-cov, httpx
-- **Code Quality**: black, isort, flake8
+- **AI/ML**: 
+  - torch>=2.0.0, torchvision>=0.15.0
+  - ultralytics>=8.0.0
+  - opencv-python>=4.8.0
+  - insightface>=0.7.3
+  - onnxruntime>=1.20.0
+  - numpy>=1.24.3, pillow>=10.2.0
 - **Frontend**: React 18.2.0, axios
-- **AI/ML**: numpy, pillow (ready for torch/huggingface/openvino integration)
+- **Testing**: pytest 7.4.3, pytest-cov, httpx
 
-## Files Created (Summary)
-### Backend
-- `backend/app/main.py` - FastAPI application with all routers
-- `backend/app/core/config.py` - Settings and configuration
-- `backend/app/core/security.py` - JWT and password hashing utilities
-- `backend/app/db/base.py` - Database session and base
-- `backend/app/models/orm_models.py` - SQLAlchemy ORM models
-- `backend/app/schemas/` - Pydantic schemas for API
-- `backend/app/api/v1/` - API endpoints (attendance, employees, cameras, environment, dashboard)
-- `backend/app/ai/` - AI module stubs (face_recog, people_count, anti_spoof)
-- `backend/Dockerfile` - Container definition
-- `backend/requirements.txt` - Python dependencies
-- `backend/tests/` - Unit tests
+## Implementation Details
 
-### Infrastructure
-- `infra/docker-compose.yml` - Docker compose configuration
-- `infra/nginx/nginx.conf` - Nginx reverse proxy config
-- `infra/migrations/001_init.sql` - Database schema migration
+### AI Modules Implementation
 
-### Frontend
-- `frontend/dashboard/` - React dashboard application
+#### Face Recognition (`backend/app/ai/face_recog.py`)
+- **Face Detection**: YOLO-face model (yolov11m-face.pt, 38.6 MB)
+  - Located at: `backend/models/yolo-face/weights/yolov11m-face.pt`
+  - Supports multiple variants (m, n, s, l, x) with priority order
+  - Uses `Path(__file__)` for reliable path resolution
+  - Falls back to generic yolo11n.pt if face-specific model not found
+- **Face Recognition**: InsightFace (buffalo_l model)
+  - 512-dimensional face embeddings
+  - Auto-downloads model to `~/.insightface/models/buffalo_l/`
+  - Lazy loading on first use
+- **Functions**:
+  - `detect_faces(image)` - Detects faces using YOLO-face
+  - `align_face(bbox, image)` - Aligns and crops face with padding
+  - `get_embedding(face_img)` - Extracts 512-dim embedding using InsightFace
+  - `get_face_embedding_from_image(image_bytes)` - End-to-end processing
 
-### Documentation
-- `docs/openapi.yaml` - OpenAPI 3.0.3 specification
-- `docs/architecture.md` - Architecture documentation
-- `README.md` - Project README with quickstart
-- `CONTRIBUTING.md` - Contribution guidelines
+#### Anti-Spoofing (`backend/app/ai/anti_spoof.py`)
+- **Model**: MiniFASNet architecture from Silent-Face-Anti-Spoofing
+- **Models**: 
+  - `2.7_80x80_MiniFASNetV2.pth` (1.76 MB)
+  - `4_0_0_80x80_MiniFASNetV1SE.pth` (1.77 MB)
+  - Located at: `backend/models/silent-face-anti-spoofing/model/`
+- **Approach**: Multi-model fusion with multi-scale patch generation
+- **Supporting Modules**:
+  - `minifasnet.py` - MiniFASNet architecture (V1, V2, V1SE, V2SE variants)
+  - `anti_spoof_utils.py` - Utilities (get_kernel, parse_model_name)
+  - `generate_patches.py` - CropImage class for multi-scale patches
+  - `transform.py` - Image transformations (Compose, ToTensor)
+- **Function**: `is_live(face_img, bbox, threshold=0.5)` - Returns True if live face, False if spoof
+- **Path Resolution**: Uses `Path(__file__)` for reliability
 
-### Scripts
-- `scripts/import_sample_data.py` - CSV import script
-- `scripts/init_db.py` - Database initialization script
-- `scripts/sample_data/` - Sample CSV files
+#### People Counting (`backend/app/ai/people_count.py`)
+- **Model**: YOLO11s for person detection
+- **Function**: `count_people(image)` - Returns number of people detected
+- Auto-downloads model via ultralytics
 
-### CI/CD
-- `.github/workflows/ci.yml` - GitHub Actions CI workflow
-- `.github/PULL_REQUEST_TEMPLATE.md` - PR template
-- `.pre-commit-config.yaml` - Pre-commit hooks
-- `.editorconfig` - Editor configuration
-- `Makefile` - Common development tasks
+### Backend API Implementation
 
-### Additional Files
-- `backend/app/core/logging_config.py` - Logging configuration
-- `scripts/create_employee.py` - Helper script to create employees
-- `scripts/create_store.py` - Helper script to create stores/cameras
-- `scripts/README.md` - Scripts documentation
+#### Check-in Endpoint (`backend/app/api/v1/attendance.py`)
+- **Anti-Spoofing Integration**: 
+  - Calls `is_live()` before face recognition
+  - Returns 403 Forbidden if spoofing detected
+  - Error message: "Face spoofing detected. Please use a live face for check-in."
+- **Single-Person Validation**:
+  - Validates exactly 1 face detected
+  - Returns 400 Bad Request if multiple faces detected
+  - Error message: "Multiple faces detected (X faces). Please ensure only one person is in the image for check-in."
+- **Face Recognition**: 
+  - Uses YOLO-face for detection
+  - Uses InsightFace for embedding extraction
+  - Cosine similarity matching with threshold 0.6
+- **Location Validation**: 
+  - Uses Haversine formula to calculate distance
+  - Minimum distance from store: 30 meters
 
-## Additional Improvements Made (Post-Initial Implementation)
-- [x] Enhanced camera endpoints with full CRUD operations
-- [x] Enhanced environment endpoints with filtering and creation
-- [x] Added logging configuration module
-- [x] Created helper scripts (create_employee.py, create_store.py)
-- [x] Added Makefile for common development tasks
-- [x] Created scripts/README.md documentation
-- [x] Updated .gitignore to include logs directory
-- [x] Fixed Pydantic v2 compatibility issues
+#### Employee Endpoint (`backend/app/api/v1/employees.py`)
+- **Face Registration**: 
+  - Accepts multiple images
+  - Uses real face recognition (YOLO-face + InsightFace)
+  - Stores 512-dimensional embeddings in database
+- **Schema**: 
+  - `EmployeeCreateRequest.role` is `Optional[str] = None`
+  - `EmployeeResponse.role` is `Optional[str] = None`
 
-## Next Steps (Future Enhancements)
-1. Replace AI stubs with real models (face recognition, people counting, anti-spoofing)
-2. Implement authentication and authorization
-3. Add real-time camera stream processing
-4. Enhance frontend dashboard with more features
-5. Add mobile app (Flutter) implementation
-6. Set up production deployment configuration
-7. Implement snapshot storage and encryption
-8. Add API rate limiting
-9. Add comprehensive monitoring and metrics
-10. Implement WebSocket for real-time updates
+#### Dashboard Endpoint (`backend/app/api/v1/dashboard.py`)
+- **Null Role Handling**: 
+  - Explicitly sets `employee_role` to `None` if `log.employee.role` is null
+  - Gracefully handles employees without roles
 
-## Quick Status Summary
+### Schema Changes
 
-**Current Status:** ✅ All 12 core tasks completed - Ready for Development
+#### Employee Schema (`backend/app/schemas/employee.py`)
+- `EmployeeBase.role` is `Optional[str] = None`
+- `EmployeeCreate.role` is `Optional[str] = None`
+- `EmployeeResponse.role` is `Optional[str] = None`
 
-**API Endpoints:**
-- ✅ POST `/api/v1/employee/register-face` - Complete
-- ✅ POST `/api/v1/attendance/check-in` - Complete  
-- ✅ GET `/api/v1/dashboard/attendance-month` - Complete
-- ✅ GET `/api/v1/cameras` - Enhanced with filtering
-- ✅ GET `/api/v1/cameras/{id}` - Enhanced
-- ✅ GET `/api/v1/environment/logs` - Enhanced
-- ✅ POST `/api/v1/environment/logs` - Enhanced
+#### Attendance Schema (`backend/app/schemas/attendance.py`)
+- `employee_role` field is `Optional[str]` to handle null values
 
-**Database:** All 7 tables created and ready
+### Frontend Implementation
 
-**AI Modules:** Stub implementations ready for real models
+#### Kiosk UI (`frontend/kiosk_ui/src/App.js`)
+- **Camera ID**: 
+  - Removed from UI (hidden from user)
+  - Automatically set from first available camera in database
+  - Fetched on component mount
+- **Photo Upload**: 
+  - Removed "Upload Photo to Check In" functionality
+  - Only allows check-in via camera capture
+  - Removed `handleFileUpload` function
+- **UI Text**: 
+  - All text translated to English
+  - Status messages in English
+  - Button labels in English
+- **Error Messages**:
+  - "Face not recognized" - Shows registration modal
+  - "Detect user using picture" - Shows spoofing detection error (403)
+  - Clear pop-up notifications for all error cases
+- **Check-in Flow**:
+  1. User starts camera
+  2. User captures photo
+  3. Photo sent to `/api/v1/attendance/check-in`
+  4. Anti-spoofing check runs first
+  5. Face recognition runs if anti-spoofing passes
+  6. Success/error message displayed
 
-**Recent Cleanup:**
-- Removed unused `Store` import from cameras.py
-- Removed unused `alembic` dependency
+#### Dashboard Component (`frontend/kiosk_ui/src/Dashboard.js`)
+- **Null Role Handling**:
+  - Displays "N/A" for null roles in employee list
+  - Employee edit form defaults to "employee" if role is null
+  - Store edit form handles null values
 
-## Frontend Components Completed (2025-12-11)
-- [x] **Kiosk UI Created** (Missing Component Added)
-  - Created `frontend/kiosk_ui/` React application
-  - Features:
-    - Camera capture for face recognition check-in
-    - Photo upload option
-    - Real-time check-in status feedback
-    - Touch-friendly interface for kiosk devices
-    - Integration with `/api/v1/attendance/check-in` endpoint
-  - Now both frontend components exist:
-    - ✅ `frontend/dashboard/` - For viewing attendance reports
-    - ✅ `frontend/kiosk_ui/` - For employee check-in at kiosk
+### Dependencies Updates
 
-## Setup & Verification Completed (2025-12-11)
-- [x] **Full Project Setup & Verification**
-  - Created necessary directories (uploads, snapshots, models/yolo-face/weights)
-  - Installed frontend dependencies (npm packages)
-  - Started all Docker services (PostgreSQL, Redis, Backend, Nginx)
-  - Initialized database with migrations
-  - Imported sample data (employees E001, E002)
-  - Created test store and camera (Store ID: 1, Camera ID: 1)
-  - Verified all services running correctly
-  - Health endpoint confirmed working: http://localhost:8000/docs
+#### Python 3.13+ Compatibility
+- `psycopg2-binary==2.9.9` → `psycopg[binary]>=3.1.0`
+- `pillow==10.1.0` → `pillow>=10.2.0`
+- `pydantic==2.5.0` → `pydantic>=2.5.0`
+- `numpy==1.24.3` → `numpy>=1.24.3`
 
-- [x] **Documentation Consolidation**
-  - Consolidated redundant documentation files
-  - Created unified `SETUP.md` (merged SETUP_GUIDE.md + HOW_TO_RUN.md)
-  - Updated `README.md` with quick start guide
-  - Moved `IMPLEMENTATION_SUMMARY.md` to `docs/` folder
-  - Deleted redundant files: QUICK_START.md, SETUP_GUIDE.md, HOW_TO_RUN.md, DOCUMENTATION_GUIDE.md
-  - Final documentation structure: 9 essential .md files (down from 12)
+#### AI/ML Dependencies Added
+- `torch>=2.0.0`
+- `torchvision>=0.15.0`
+- `ultralytics>=8.0.0`
+- `opencv-python>=4.8.0`
+- `insightface>=0.7.3`
+- `onnxruntime>=1.20.0` (required by insightface)
 
-**Current Project Status:** ✅ Fully Set Up & Running
-- All Docker services operational
-- Database initialized with sample data
-- Backend API accessible at http://localhost:8000
-- Documentation cleaned and organized
+#### Removed Dependencies
+- `deepface` (not used)
+- `tensorflow` (not used)
+- `onnx` (not used)
+- `ml_dtypes` (not used)
+
+### Installation & Setup
+
+#### InsightFace Installation
+- Required Windows SDK 10.0.22621.0 for C++ compilation
+- Set environment variables (INCLUDE, LIB) for compiler
+- Successfully built and installed from source
+- onnxruntime installed as dependency
+
+### Path Resolution
+- All AI modules use `Path(__file__)` for reliable path resolution
+- Works from any working directory (backend/, project root, etc.)
+- `face_recog.py`: Finds YOLO-face model correctly
+- `anti_spoof.py`: Finds anti-spoofing models correctly
+
+## Current Status
+✅ **All Core Features Implemented**
+- Face detection and recognition working
+- Anti-spoofing detection working
+- Single-person validation working
+- People counting working
+- All API endpoints functional
+- Frontend UI complete with English text
+- Null role handling implemented
+- All dependencies installed and working
 
 ## Notes for Future Sessions
 - **ALWAYS READ THIS FILE FIRST** before continuing work
 - Review scaffold document (`ai_attendance_for_cafe_project_scaffold.md`) for requirements
 - For quick start: See `README.md` → `cd infra && docker compose up -d`
 - For detailed setup: See `SETUP.md`
-- Continue from last completed task
-- Update progress markers as work progresses
-
+- Model locations:
+  - YOLO-face: `backend/models/yolo-face/weights/yolov11m-face.pt`
+  - Anti-spoofing: `backend/models/silent-face-anti-spoofing/model/*.pth`
+  - InsightFace: Auto-downloaded to `~/.insightface/models/buffalo_l/`
+- All path resolutions use `Path(__file__)` for reliability

@@ -56,25 +56,26 @@ def _initialize_anti_spoofing():
     _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Anti-spoofing initialized on device: {_device}")
     
-    # Find model directory
-    model_dir_paths = [
-        "backend/models/silent-face-anti-spoofing/model",
-        "models/silent-face-anti-spoofing/model",
-        "../models/silent-face-anti-spoofing/model",
+    # Find model directory - use Path(__file__) for reliable path resolution
+    base_paths = [
+        Path(__file__).parent.parent.parent / "models" / "silent-face-anti-spoofing" / "model",  # From backend/app/ai/
+        Path(__file__).parent.parent.parent.parent / "backend" / "models" / "silent-face-anti-spoofing" / "model",  # From project root
+        Path("models") / "silent-face-anti-spoofing" / "model",  # From backend/
+        Path("backend") / "models" / "silent-face-anti-spoofing" / "model",  # From project root
     ]
     
-    for path in model_dir_paths:
-        if Path(path).exists():
-            _model_dir = path
+    for base_path in base_paths:
+        if base_path.exists():
+            _model_dir = str(base_path)
             break
     
     if _model_dir is None:
         print("⚠ Warning: Anti-spoofing model directory not found")
         print("  Expected paths:")
-        for path in model_dir_paths:
+        for path in base_paths:
             print(f"    - {path}")
     else:
-        print(f"✓ Model directory found: {_model_dir}")
+        print(f"Model directory found: {_model_dir}")
     
     _image_cropper = CropImage()
 
