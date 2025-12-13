@@ -32,12 +32,24 @@ def _initialize_models():
         _device = "0" if torch.cuda.is_available() else "cpu"
         
         # Initialize YOLO-face model
-        # Try to find the model file
-        model_paths = [
-            "yolo-face/weights/yolov11n-face.pt",
-            "weights/yolov11n-face.pt",
-            "yolov11n-face.pt"
+        # Try to find the model file (check multiple variants: m, n, s, l, x)
+        # Check paths relative to different working directories
+        base_paths = [
+            Path(__file__).parent.parent.parent / "models" / "yolo-face" / "weights",  # From backend/app/ai/
+            Path(__file__).parent.parent.parent.parent / "backend" / "models" / "yolo-face" / "weights",  # From project root
+            Path("models") / "yolo-face" / "weights",  # From backend/
+            Path("backend") / "models" / "yolo-face" / "weights",  # From project root
+            Path("yolo-face") / "weights",  # From project root or backend/
+            Path("weights"),  # Current directory
         ]
+        
+        model_variants = ["yolov11m-face.pt", "yolov11n-face.pt", "yolov11s-face.pt", 
+                         "yolov11l-face.pt", "yolov11x-face.pt"]
+        
+        model_paths = []
+        for base in base_paths:
+            for variant in model_variants:
+                model_paths.append(str(base / variant))
         
         yolo_face_path = None
         for path in model_paths:
@@ -46,10 +58,11 @@ def _initialize_models():
                 break
         
         if yolo_face_path is None:
-            # Download or use fallback
-            print("Warning: YOLO-face model not found. Using YOLO11n as fallback.")
+            # Download or use fallback (generic YOLO, not face-specific - less accurate)
+            print("Warning: YOLO-face model not found. Using YOLO11n as fallback (not face-specific).")
             _yolo_face_model = YOLO("yolo11n.pt")
         else:
+            print(f"Using YOLO-face model: {yolo_face_path}")
             _yolo_face_model = YOLO(yolo_face_path)
         
         # Initialize InsightFace for face recognition (embedding extraction)
