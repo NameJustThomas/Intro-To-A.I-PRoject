@@ -1,0 +1,44 @@
+{
+  "face_detection": {
+    "avg_ms": 0.471820002712775,
+    "min_ms": 0.34749999758787453,
+    "max_ms": 0.6814000080339611,
+    "std_ms": 0.10613292148295148,
+    "iterations": 10
+  },
+  "face_recognition": {
+    "avg_ms": 0,
+    "min_ms": 0,
+    "max_ms": 0,
+    "std_ms": 0,
+    "error": "No face detected"
+  },
+  "anti_spoofing": {
+    "avg_ms": 0,
+    "min_ms": 0,
+    "max_ms": 0,
+    "std_ms": 0,
+    "error": "No face detected"
+  },
+  "people_counting": {
+    "avg_ms": 0.3348300000652671,
+    "min_ms": 0.2901999978348613,
+    "max_ms": 0.42890000622719526,
+    "std_ms": 0.044757991426797754,
+    "iterations": 10
+  },
+  "memory": {
+    "ram_mb": 805.5,
+    "gpu_available": false,
+    "gpu_memory_mb": null,
+    "delta_mb": 570.55078125
+  },
+  "end_to_end": {
+    "avg_ms": 0,
+    "min_ms": 0,
+    "max_ms": 0,
+    "std_ms": 0,
+    "error": "All iterations skipped",
+    "skipped": 5
+  }
+}

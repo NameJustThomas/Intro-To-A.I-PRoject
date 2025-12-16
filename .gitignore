@@ -48,6 +48,10 @@ snapshots/
 # Logs
 *.log
 logs/
+backend/logs/
+
+# Performance results (keep latest, ignore old timestamped files)
+performance_results/complete_results_*.json
 
 # Node
 node_modules/

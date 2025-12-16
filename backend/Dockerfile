@@ -17,7 +17,10 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements first for better caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Upgrade pip and install with increased timeout and retries for large packages
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir --default-timeout=300 --retries=5 -r requirements.txt
 
 # Copy application code
 COPY . .

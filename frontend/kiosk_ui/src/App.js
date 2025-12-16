@@ -13,6 +13,7 @@ function CheckIn() {
   const [stream, setStream] = useState(null);
   const [status, setStatus] = useState({ type: 'info', message: 'Ready to check in' });
   const [checkinResult, setCheckinResult] = useState(null);
+  const [errorPerformanceMetrics, setErrorPerformanceMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   
@@ -217,6 +218,10 @@ function CheckIn() {
       );
 
       const result = response.data;
+      
+      // Clear error metrics on successful check-in
+      setErrorPerformanceMetrics(null);
+      
       setCheckinResult({
         employeeId: result.employee_id,
         employeeName: result.employee_name,
@@ -227,7 +232,58 @@ function CheckIn() {
         longitude: result.longitude,
         locationValidated: result.location_validated,
         distanceFromStore: result.distance_from_store,
+        performanceMetrics: result.performance_metrics,
       });
+
+      // Log performance metrics to console
+      if (result.performance_metrics) {
+        const metrics = {
+          'Total Time': `${result.performance_metrics.total_time_ms}ms`,
+          'Image Upload': `${result.performance_metrics.image_upload_ms || 0}ms`,
+          'Face Detection': `${result.performance_metrics.face_detection_ms}ms`,
+          'Anti-Spoofing': `${result.performance_metrics.anti_spoofing_ms}ms`,
+          'Face Recognition': `${result.performance_metrics.face_recognition_ms}ms`,
+          'Database Matching': `${result.performance_metrics.database_matching_ms}ms`,
+          'Database Write': `${result.performance_metrics.database_write_ms}ms`,
+          'Location Validation': `${result.performance_metrics.location_validation_ms}ms`,
+          'Embeddings Searched': result.performance_metrics.num_embeddings_searched,
+        };
+        
+        // Add system resources if available
+        if (result.performance_metrics.cpu_percent !== undefined) {
+          const cpuDisplay = result.performance_metrics.cpu_cores > 1 
+            ? `${result.performance_metrics.cpu_percent}% (${result.performance_metrics.cpu_cores} cores)`
+            : `${result.performance_metrics.cpu_percent}%`;
+          metrics['CPU Usage'] = cpuDisplay;
+          metrics['RAM Usage'] = `${result.performance_metrics.ram_usage_mb}MB (${result.performance_metrics.ram_percent}%)`;
+          if (result.performance_metrics.gpu_available && result.performance_metrics.gpu_memory_mb) {
+            metrics['GPU Memory'] = `${result.performance_metrics.gpu_memory_mb}MB`;
+          }
+        }
+        
+        // Add per-model memory if available
+        // Note: These are memory deltas (changes during operation), not total model memory
+        // If models are already loaded (lazy loading), delta will be small (~0)
+        const modelMemory = {};
+        if (result.performance_metrics.face_detection_memory_mb !== undefined) {
+          const mem = result.performance_metrics.face_detection_memory_mb;
+          modelMemory['Face Detection (YOLO)'] = `${mem.toFixed(2)}MB${mem < 1 ? ' (delta, model may be cached)' : ''}`;
+        }
+        if (result.performance_metrics.face_recognition_memory_mb !== undefined) {
+          const mem = result.performance_metrics.face_recognition_memory_mb;
+          modelMemory['Face Recognition (InsightFace)'] = `${mem.toFixed(2)}MB${mem < 5 ? ' (delta, model may be cached)' : ''}`;
+        }
+        if (result.performance_metrics.anti_spoofing_memory_mb !== undefined && result.performance_metrics.anti_spoofing_memory_mb > 0) {
+          const mem = result.performance_metrics.anti_spoofing_memory_mb;
+          modelMemory['Anti-Spoofing (MiniFASNet)'] = `${mem.toFixed(2)}MB${mem < 1 ? ' (delta, model may be cached)' : ''}`;
+        }
+        
+        if (Object.keys(modelMemory).length > 0) {
+          metrics['Model Memory (delta)'] = modelMemory;
+        }
+        
+        console.log('📊 Performance Metrics:', metrics);
+      }
 
       setStatus({
         type: 'success',
@@ -284,11 +340,63 @@ function CheckIn() {
       let errorMsg = 'Check-in failed';
       let shouldShowRegistration = false;
       let isSpoofingDetected = false;
+      let perfMetrics = null;
       
       if (error.response) {
         // Handle different error response formats
         const responseData = error.response.data;
         const statusCode = error.response.status;
+        
+        // Extract performance metrics from error response if available
+        if (responseData?.performance_metrics) {
+          perfMetrics = responseData.performance_metrics;
+          setErrorPerformanceMetrics(perfMetrics);
+          
+          // Log performance metrics from error response
+          const metrics = {
+            'Total Time': `${perfMetrics.total_time_ms}ms`,
+            'Face Detection': `${perfMetrics.face_detection_ms}ms`,
+            'Anti-Spoofing': `${perfMetrics.anti_spoofing_ms}ms`,
+            'Face Recognition': `${perfMetrics.face_recognition_ms}ms`,
+            'Database Matching': `${perfMetrics.database_matching_ms}ms`,
+            'Database Write': `${perfMetrics.database_write_ms}ms`,
+            'Location Validation': `${perfMetrics.location_validation_ms}ms`,
+            'Embeddings Searched': perfMetrics.num_embeddings_searched,
+          };
+          
+          // Add system resources if available
+          if (perfMetrics.cpu_percent !== undefined) {
+            const cpuDisplay = perfMetrics.cpu_cores > 1 
+              ? `${perfMetrics.cpu_percent}% (${perfMetrics.cpu_cores} cores)`
+              : `${perfMetrics.cpu_percent}%`;
+            metrics['CPU Usage'] = cpuDisplay;
+            metrics['RAM Usage'] = `${perfMetrics.ram_usage_mb}MB (${perfMetrics.ram_percent}%)`;
+            if (perfMetrics.gpu_available && perfMetrics.gpu_memory_mb) {
+              metrics['GPU Memory'] = `${perfMetrics.gpu_memory_mb}MB`;
+            }
+          }
+          
+          // Add per-model memory if available
+          const modelMemory = {};
+          if (perfMetrics.face_detection_memory_mb > 0) {
+            modelMemory['Face Detection (YOLO)'] = `${perfMetrics.face_detection_memory_mb}MB`;
+          }
+          if (perfMetrics.face_recognition_memory_mb > 0) {
+            modelMemory['Face Recognition (InsightFace)'] = `${perfMetrics.face_recognition_memory_mb}MB`;
+          }
+          if (perfMetrics.anti_spoofing_memory_mb > 0) {
+            modelMemory['Anti-Spoofing (MiniFASNet)'] = `${perfMetrics.anti_spoofing_memory_mb}MB`;
+          }
+          
+          if (Object.keys(modelMemory).length > 0) {
+            metrics['Model Memory'] = modelMemory;
+          }
+          
+          console.log('⚠️ Performance Metrics (from error response):', metrics);
+        } else {
+          // Clear error metrics if not present
+          setErrorPerformanceMetrics(null);
+        }
         
         if (typeof responseData === 'string') {
           errorMsg = responseData;
@@ -400,6 +508,11 @@ function CheckIn() {
       // For other errors, show error message
       setStatus({ type: 'error', message: errorMsg });
       setLoading(false);
+      
+      // Clear error metrics if no metrics were found
+      if (!perfMetrics) {
+        setErrorPerformanceMetrics(null);
+      }
     }
   };
 
@@ -627,6 +740,26 @@ function CheckIn() {
                 </button>
               </div>
             )}
+            {/* Show performance metrics from error response */}
+            {status.type === 'error' && errorPerformanceMetrics && (
+              <div style={{ marginTop: '15px', padding: '10px', backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: '5px', fontSize: '0.85em' }}>
+                <p style={{ fontWeight: '600', marginBottom: '8px', color: '#fff' }}>⚠️ Performance Metrics (before error):</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', fontSize: '0.8em' }}>
+                  <span><strong>Total Time:</strong> {errorPerformanceMetrics.total_time_ms.toFixed(2)}ms</span>
+                  <span><strong>Face Detection:</strong> {errorPerformanceMetrics.face_detection_ms.toFixed(2)}ms</span>
+                  <span><strong>Anti-Spoofing:</strong> {errorPerformanceMetrics.anti_spoofing_ms.toFixed(2)}ms</span>
+                  <span><strong>Face Recognition:</strong> {errorPerformanceMetrics.face_recognition_ms.toFixed(2)}ms</span>
+                  {errorPerformanceMetrics.cpu_percent !== undefined && (
+                    <>
+                      <span><strong>CPU Usage:</strong> {errorPerformanceMetrics.cpu_percent.toFixed(1)}%
+                        {errorPerformanceMetrics.cpu_cores > 1 && ` (${errorPerformanceMetrics.cpu_cores} cores)`}
+                      </span>
+                      <span><strong>RAM Usage:</strong> {errorPerformanceMetrics.ram_usage_mb.toFixed(1)}MB ({errorPerformanceMetrics.ram_percent.toFixed(1)}%)</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -652,6 +785,54 @@ function CheckIn() {
                     </p>
                   )}
                 </>
+              )}
+              {checkinResult.performanceMetrics && (
+                <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '5px', fontSize: '0.9em' }}>
+                  <p style={{ fontWeight: '600', marginBottom: '8px', color: '#495057' }}>📊 Performance Metrics:</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', fontSize: '0.85em' }}>
+                    <span><strong>Total Time:</strong> {checkinResult.performanceMetrics.total_time_ms.toFixed(2)}ms</span>
+                    <span style={checkinResult.performanceMetrics.face_detection_ms > 5000 ? { color: '#dc3545', fontWeight: '600' } : {}}>
+                      <strong>Face Detection:</strong> {checkinResult.performanceMetrics.face_detection_ms.toFixed(2)}ms
+                      {checkinResult.performanceMetrics.face_detection_ms > 5000 && ' ⚠️ (Slow - first load?)'}
+                    </span>
+                    <span><strong>Anti-Spoofing:</strong> {checkinResult.performanceMetrics.anti_spoofing_ms.toFixed(2)}ms</span>
+                    <span><strong>Face Recognition:</strong> {checkinResult.performanceMetrics.face_recognition_ms.toFixed(2)}ms</span>
+                    <span><strong>DB Matching:</strong> {checkinResult.performanceMetrics.database_matching_ms.toFixed(2)}ms</span>
+                    <span><strong>DB Write:</strong> {checkinResult.performanceMetrics.database_write_ms.toFixed(2)}ms</span>
+                    <span><strong>Location Check:</strong> {checkinResult.performanceMetrics.location_validation_ms.toFixed(2)}ms</span>
+                    <span><strong>Embeddings:</strong> {checkinResult.performanceMetrics.num_embeddings_searched}</span>
+                    {checkinResult.performanceMetrics.cpu_percent !== undefined && (
+                      <>
+                        <span><strong>CPU Usage:</strong> {checkinResult.performanceMetrics.cpu_percent.toFixed(1)}%
+                          {checkinResult.performanceMetrics.cpu_cores > 1 && ` (${checkinResult.performanceMetrics.cpu_cores} cores)`}
+                        </span>
+                        <span><strong>Total RAM:</strong> {checkinResult.performanceMetrics.ram_usage_mb.toFixed(1)}MB ({checkinResult.performanceMetrics.ram_percent.toFixed(1)}%)</span>
+                        {checkinResult.performanceMetrics.gpu_available && checkinResult.performanceMetrics.gpu_memory_mb && (
+                          <span><strong>GPU Memory:</strong> {checkinResult.performanceMetrics.gpu_memory_mb.toFixed(1)}MB</span>
+                  )}
+                </>
+                    )}
+                  </div>
+                  {/* Per-Model Memory Usage */}
+                  {(checkinResult.performanceMetrics.face_detection_memory_mb > 0 || 
+                    checkinResult.performanceMetrics.face_recognition_memory_mb > 0 || 
+                    checkinResult.performanceMetrics.anti_spoofing_memory_mb > 0) && (
+                    <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '5px', fontSize: '0.85em' }}>
+                      <p style={{ fontWeight: '600', marginBottom: '8px', color: '#495057' }}>💾 Model Memory Usage:</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                        {checkinResult.performanceMetrics.face_detection_memory_mb > 0 && (
+                          <span><strong>Face Detection (YOLO):</strong> {checkinResult.performanceMetrics.face_detection_memory_mb.toFixed(1)}MB</span>
+                        )}
+                        {checkinResult.performanceMetrics.face_recognition_memory_mb > 0 && (
+                          <span><strong>Face Recognition (InsightFace):</strong> {checkinResult.performanceMetrics.face_recognition_memory_mb.toFixed(1)}MB</span>
+                        )}
+                        {checkinResult.performanceMetrics.anti_spoofing_memory_mb > 0 && (
+                          <span><strong>Anti-Spoofing (MiniFASNet):</strong> {checkinResult.performanceMetrics.anti_spoofing_memory_mb.toFixed(1)}MB</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             <p style={{ marginTop: '15px', color: '#667eea', fontWeight: '600' }}>

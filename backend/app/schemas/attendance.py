@@ -1,6 +1,32 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict
 from datetime import datetime
+
+
+class PerformanceMetricsResponse(BaseModel):
+    """Performance metrics for check-in operation."""
+    total_time_ms: float
+    image_upload_ms: float
+    face_detection_ms: float
+    anti_spoofing_ms: float
+    face_recognition_ms: float
+    database_matching_ms: float
+    database_write_ms: float
+    location_validation_ms: float
+    num_faces_detected: int
+    num_embeddings_searched: int
+    confidence_score: float
+    cpu_percent: float  # Normalized 0-100%
+    cpu_cores: int  # Number of CPU cores
+    ram_usage_mb: float
+    ram_percent: float
+    gpu_available: bool
+    gpu_memory_mb: Optional[float] = None
+    slow_detection_warning: bool = False  # True if face detection was slow (>5s)
+    # Per-model memory usage (MB)
+    face_detection_memory_mb: float = 0.0
+    face_recognition_memory_mb: float = 0.0
+    anti_spoofing_memory_mb: float = 0.0
 
 
 class CheckInResponse(BaseModel):
@@ -13,6 +39,7 @@ class CheckInResponse(BaseModel):
     longitude: Optional[float] = None
     location_validated: Optional[bool] = None
     distance_from_store: Optional[float] = None
+    performance_metrics: Optional[PerformanceMetricsResponse] = None
 
 
 class CheckInHistoryItem(BaseModel):
@@ -50,4 +77,11 @@ class MonthlyAttendanceResponse(BaseModel):
     total_employees: int
     total_check_ins: int
     attendance_summary: list[AttendanceSummary]
+
+
+class CheckInErrorResponse(BaseModel):
+    """Error response with performance metrics for debugging."""
+    detail: str
+    error_type: str
+    performance_metrics: Optional[PerformanceMetricsResponse] = None
 
